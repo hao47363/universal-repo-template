@@ -351,6 +351,96 @@ elif [ "$config_dep_hits" -ge 2 ]; then
   config_dep_level="MEDIUM"
 fi
 
+api_count="$(wc -l < "$api_file" | tr -d ' ')"
+backend_count="$(wc -l < "$backend_file" | tr -d ' ')"
+database_count="$(wc -l < "$database_file" | tr -d ' ')"
+ui_count="$(wc -l < "$ui_file" | tr -d ' ')"
+config_count="$(wc -l < "$config_file" | tr -d ' ')"
+
+impact_areas_file="$tmp_dir/impact_areas.txt"
+: > "$impact_areas_file"
+[ "$api_count" -gt 0 ] && echo "API" >> "$impact_areas_file"
+[ "$backend_count" -gt 0 ] && echo "Backend logic" >> "$impact_areas_file"
+[ "$database_count" -gt 0 ] && echo "Database" >> "$impact_areas_file"
+[ "$ui_count" -gt 0 ] && echo "UI" >> "$impact_areas_file"
+[ "$config_count" -gt 0 ] && echo "Configuration" >> "$impact_areas_file"
+impact_area_count="$(wc -l < "$impact_areas_file" | tr -d ' ')"
+impact_areas_csv="$(paste -sd ', ' "$impact_areas_file" 2>/dev/null || true)"
+[ -z "$impact_areas_csv" ] && impact_areas_csv="None"
+
+score_to_level() {
+  score="$1"
+  if [ "$score" -ge 9 ]; then
+    echo "CRITICAL"
+  elif [ "$score" -ge 7 ]; then
+    echo "HIGH"
+  elif [ "$score" -ge 4 ]; then
+    echo "MEDIUM"
+  else
+    echo "LOW"
+  fi
+}
+
+severity_rank() {
+  case "$1" in
+    LOW) echo 1 ;;
+    MEDIUM) echo 2 ;;
+    HIGH) echo 3 ;;
+    CRITICAL) echo 4 ;;
+    *) echo 0 ;;
+  esac
+}
+
+max_severity() {
+  current="$1"
+  candidate="$2"
+  if [ "$(severity_rank "$candidate")" -gt "$(severity_rank "$current")" ]; then
+    echo "$candidate"
+  else
+    echo "$current"
+  fi
+}
+
+overall_risk_level="$(score_to_level "$risk_score")"
+overall_risk_level="$(max_severity "$overall_risk_level" "$hotspot_level")"
+overall_risk_level="$(max_severity "$overall_risk_level" "$config_dep_level")"
+if [ "$large_refactor" = "true" ]; then
+  overall_risk_level="$(max_severity "$overall_risk_level" "$large_refactor_severity")"
+fi
+
+summary_points_file="$tmp_dir/summary_points.txt"
+: > "$summary_points_file"
+if [ "$impact_area_count" -gt 0 ]; then
+  echo "Impacts ${impact_area_count} area(s): ${impact_areas_csv}." >> "$summary_points_file"
+else
+  echo "No high-signal impact area was detected from path rules." >> "$summary_points_file"
+fi
+if [ "$large_refactor" = "true" ]; then
+  echo "Refactor pattern detected at ${large_refactor_severity} severity." >> "$summary_points_file"
+fi
+if [ -s "$hotspots_file" ]; then
+  echo "Hotspot files are present (${hotspot_level})." >> "$summary_points_file"
+fi
+if [ "$config_dep_hits" -gt 0 ]; then
+  echo "Configuration/dependency touch count is ${config_dep_hits} (${config_dep_level})." >> "$summary_points_file"
+fi
+if [ "$critical_path_hits" -gt 0 ]; then
+  echo "Critical path signal count is ${critical_path_hits} (auth/payment/config/security)." >> "$summary_points_file"
+fi
+
+review_recommendation="Normal review path is sufficient."
+case "$overall_risk_level" in
+  CRITICAL)
+    review_recommendation="Require full reviewer sweep across impacted modules before merge."
+    ;;
+  HIGH)
+    review_recommendation="Require at least one domain-owner review for impacted critical areas."
+    ;;
+  MEDIUM)
+    review_recommendation="Prioritize targeted review on impacted areas and config changes."
+    ;;
+esac
+
 render_list_or_none() {
   file="$1"
   if [ -s "$file" ]; then
@@ -367,6 +457,19 @@ render_list_or_none() {
   echo "# PR Intelligence Report"
   echo
   echo "Comparison range: \`$range\`"
+  echo
+  echo "## Executive Summary"
+  echo
+  echo "- Overall risk level: **$overall_risk_level**"
+  echo "- Risk score basis: **$risk_score/10**"
+  echo "- Impacted areas: **$impact_areas_csv**"
+  echo "- Reviewer recommendation: $review_recommendation"
+  if [ -s "$summary_points_file" ]; then
+    while IFS= read -r point; do
+      [ -z "$point" ] && continue
+      echo "- $point"
+    done < "$summary_points_file"
+  fi
   echo
   echo "## 1. PR Risk Score"
   echo
