@@ -68,4 +68,5 @@ lefthook install
   - includes guidance for Next.js, Laravel, Flutter, and Python
 - `templates/lint/README.md` for copy-ready lint starter configs by stack
 - `docs/configuration-reference.md` for required/optional/default values of each setting
+- `docs/changelog-guidelines.md` for Keep a Changelog + SemVer release rules
 

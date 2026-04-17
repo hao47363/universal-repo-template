@@ -111,6 +111,7 @@ Set a meaningful `key` that includes OS and lockfile hash when possible.
 - `docs/naming-conventions.md`
 - `docs/linting-strategy.md`
 - `docs/configuration-reference.md`
+- `docs/changelog-guidelines.md`
 
 ## Recommended branch protection
 
