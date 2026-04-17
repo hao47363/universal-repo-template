@@ -19,7 +19,7 @@ This template is designed to stay language-agnostic while improving feedback spe
    - commit message format
    - PR title format
 3. `lint`, `test`, and `build` run as separate jobs (if enabled).
-4. `PR Intelligence` runs in its own workflow on pull request lifecycle events and generates a deterministic `pr-report.md` artifact from `base...head` for every PR update (including docs-only changes).
+4. `PR Intelligence` runs in its own workflow on `pull_request` lifecycle events and generates a deterministic `pr-report.md` artifact from `base...head` for every PR update (including docs-only changes).
 
 ## Why this improves DevX
 
@@ -37,7 +37,7 @@ This template is designed to stay language-agnostic while improving feedback spe
 - Deterministic scoring: score and findings derive only from git diff metadata and file paths.
 - Language agnostic: no language parsers or framework-specific services required.
 - Generated artifact: `pr-report.md` is uploaded by CI as `pr-report-pr-<number>`.
-- PR visibility: CI also creates/updates a single sticky PR comment containing the latest report (upsert by marker, no comment spam).
+- PR visibility: CI also creates/updates a single sticky PR comment containing the latest report (upsert by marker, no comment spam). If comment permission is restricted for the event context, artifact upload still succeeds.
 
 ## Project config reference
 
