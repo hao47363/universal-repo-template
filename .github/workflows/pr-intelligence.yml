@@ -1,7 +1,7 @@
 name: PR Intelligence
 
 on:
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - reopened
@@ -12,6 +12,7 @@ on:
 permissions:
   contents: read
   issues: write
+  pull-requests: write
 
 concurrency:
   group: pr-intelligence-${{ github.event.pull_request.number }}
@@ -27,10 +28,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fetch PR head ref
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "pull/${PR_NUMBER}/head:refs/remotes/origin/pr-${PR_NUMBER}-head"
+
       - name: Generate PR report
         env:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_HEAD_SHA: refs/remotes/origin/pr-${{ github.event.pull_request.number }}-head
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_BASE_REF: ${{ github.base_ref }}
         run: sh ./governance-pack/scripts/generate_pr_report.sh pr-report.md

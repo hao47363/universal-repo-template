@@ -37,7 +37,7 @@ This template is designed to stay language-agnostic while improving feedback spe
 - Deterministic scoring: score and findings derive only from git diff metadata and file paths.
 - Language agnostic: no language parsers or framework-specific services required.
 - Generated artifact: `pr-report.md` is uploaded by CI as `pr-report-pr-<number>`.
-- PR visibility: CI also creates/updates a single sticky PR comment containing the latest report.
+- PR visibility: CI also creates/updates a single sticky PR comment containing the latest report (upsert by marker, no comment spam).
 
 ## Project config reference
 
