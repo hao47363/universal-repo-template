@@ -14,7 +14,7 @@ fi
 read_cfg() {
   key="$1"
   default_value="${2:-}"
-  sh ./scripts/get_config_value.sh "$key" "$default_value"
+  sh ./governance-pack/scripts/get_config_value.sh "$key" "$default_value"
 }
 
 stack="$(read_cfg "project.stack" "")"
@@ -163,4 +163,3 @@ case "$mode" in
     exit 1
     ;;
 esac
-

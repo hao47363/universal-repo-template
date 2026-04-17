@@ -21,11 +21,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "enabled=$(sh ./scripts/get_config_value.sh automation.stale_enabled true)" >> "$GITHUB_OUTPUT"
-          echo "days_before_stale=$(sh ./scripts/get_config_value.sh automation.stale_days_before_stale 30)" >> "$GITHUB_OUTPUT"
-          echo "days_before_close=$(sh ./scripts/get_config_value.sh automation.stale_days_before_close 14)" >> "$GITHUB_OUTPUT"
-          echo "exempt_issue_labels=$(sh ./scripts/get_config_value.sh automation.stale_exempt_issue_labels pinned,security,never-stale)" >> "$GITHUB_OUTPUT"
-          echo "exempt_pr_labels=$(sh ./scripts/get_config_value.sh automation.stale_exempt_pr_labels pinned,security,never-stale)" >> "$GITHUB_OUTPUT"
+          echo "enabled=$(sh ./governance-pack/scripts/get_config_value.sh automation.stale_enabled true)" >> "$GITHUB_OUTPUT"
+          echo "days_before_stale=$(sh ./governance-pack/scripts/get_config_value.sh automation.stale_days_before_stale 30)" >> "$GITHUB_OUTPUT"
+          echo "days_before_close=$(sh ./governance-pack/scripts/get_config_value.sh automation.stale_days_before_close 14)" >> "$GITHUB_OUTPUT"
+          echo "exempt_issue_labels=$(sh ./governance-pack/scripts/get_config_value.sh automation.stale_exempt_issue_labels pinned,security,never-stale)" >> "$GITHUB_OUTPUT"
+          echo "exempt_pr_labels=$(sh ./governance-pack/scripts/get_config_value.sh automation.stale_exempt_pr_labels pinned,security,never-stale)" >> "$GITHUB_OUTPUT"
 
       - name: Mark stale items
         if: ${{ steps.cfg.outputs.enabled == 'true' }}

@@ -10,10 +10,10 @@ if [ -z "$key" ]; then
   exit 1
 fi
 
-value="$(sh ./scripts/read_repo_settings.sh "$key" 2>/dev/null || true)"
+value="$(sh ./governance-pack/scripts/read_repo_settings.sh "$key" 2>/dev/null || true)"
 
 if [ -z "$value" ]; then
-  value="$(sh ./scripts/read_project_config.sh "$key" 2>/dev/null || true)"
+  value="$(sh ./governance-pack/scripts/read_project_config.sh "$key" 2>/dev/null || true)"
 fi
 
 if [ -z "$value" ]; then

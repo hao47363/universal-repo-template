@@ -15,8 +15,8 @@ if [ -z "$branch_name" ]; then
   exit 1
 fi
 
-exempt_branches="$(sh ./scripts/get_config_value.sh governance.exempt_branches "main,develop,staging,dev")"
-branch_types="$(sh ./scripts/get_config_value.sh governance.branch_types "feature,feat,fix,chore,docs,refactor,test,perf,ci,build,style,revert")"
+exempt_branches="$(sh ./governance-pack/scripts/get_config_value.sh governance.exempt_branches "main,develop,staging,dev")"
+branch_types="$(sh ./governance-pack/scripts/get_config_value.sh governance.branch_types "feature,feat,fix,chore,docs,refactor,test,perf,ci,build,style,revert")"
 
 if printf ',%s,' "$exempt_branches" | tr -d ' ' | grep -q ",$branch_name,"; then
   exit 0
@@ -34,4 +34,3 @@ if ! printf '%s' "$branch_name" | grep -Eq "$pattern"; then
   echo "Branch-name rules: lowercase letters, numbers, dot, underscore, dash"
   exit 1
 fi
-

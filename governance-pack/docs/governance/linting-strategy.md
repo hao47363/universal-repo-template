@@ -117,12 +117,12 @@ Use one stack-specific command set per project:
 
 This repository includes copy-ready starter files:
 
-- `templates/lint/nextjs/eslint.config.mjs`
-- `templates/lint/laravel/pint.json`
-- `templates/lint/flutter/analysis_options.yaml`
-- `templates/lint/python/pyproject.toml`
+- `governance-pack/templates/lint/nextjs/eslint.config.mjs`
+- `governance-pack/templates/lint/laravel/pint.json`
+- `governance-pack/templates/lint/flutter/analysis_options.yaml`
+- `governance-pack/templates/lint/python/pyproject.toml`
 
-Usage instructions are in `templates/lint/README.md`.
+Usage instructions are in `governance-pack/templates/lint/README.md`.
 
 ## Practical quality guardrails
 

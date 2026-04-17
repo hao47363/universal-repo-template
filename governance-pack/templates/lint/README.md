@@ -4,10 +4,10 @@ Copy only the stack you use. Do not combine all lint configs in one project.
 
 ## Available presets
 
-- Next.js: `templates/lint/nextjs/eslint.config.mjs`
-- Laravel: `templates/lint/laravel/pint.json`
-- Flutter: `templates/lint/flutter/analysis_options.yaml`
-- Python: `templates/lint/python/pyproject.toml`
+- Next.js: `governance-pack/templates/lint/nextjs/eslint.config.mjs`
+- Laravel: `governance-pack/templates/lint/laravel/pint.json`
+- Flutter: `governance-pack/templates/lint/flutter/analysis_options.yaml`
+- Python: `governance-pack/templates/lint/python/pyproject.toml`
 
 ## Quick usage
 

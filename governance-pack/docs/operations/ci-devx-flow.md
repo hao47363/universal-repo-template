@@ -108,10 +108,10 @@ Set a meaningful `key` that includes OS and lockfile hash when possible.
 
 ## Related docs
 
-- `docs/governance/naming-conventions.md`
-- `docs/governance/linting-strategy.md`
-- `docs/reference/configuration-reference.md`
-- `docs/governance/changelog-guidelines.md`
+- `governance-pack/docs/governance/naming-conventions.md`
+- `governance-pack/docs/governance/linting-strategy.md`
+- `governance-pack/docs/reference/configuration-reference.md`
+- `governance-pack/docs/governance/changelog-guidelines.md`
 
 ## Recommended branch protection
 
