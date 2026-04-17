@@ -93,7 +93,7 @@ jobs:
       - name: Validate branch name
         env:
           BRANCH_NAME: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
-        run: ./scripts/validate_branch_name.sh "$BRANCH_NAME"
+        run: sh ./scripts/validate_branch_name.sh "$BRANCH_NAME"
 
       - name: Validate commit messages
         shell: bash
@@ -126,7 +126,7 @@ jobs:
             msg="$(git log --format=%s -n 1 "$commit")"
             f="$(mktemp)"
             printf '%s\n' "$msg" > "$f"
-            ./scripts/validate_commit_msg.sh "$f"
+            sh ./scripts/validate_commit_msg.sh "$f"
             rm -f "$f"
           done
 
@@ -134,7 +134,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
-        run: ./scripts/validate_pr_title.sh "$PR_TITLE"
+        run: sh ./scripts/validate_pr_title.sh "$PR_TITLE"
 
   lint:
     name: Lint
