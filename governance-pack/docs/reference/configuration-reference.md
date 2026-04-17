@@ -142,6 +142,36 @@ When both files define the same key, `.template/repo-settings.yml` takes precede
 - Default: `pinned,security,never-stale`
 - Description: Comma-separated PR labels exempt from stale handling.
 
+### `pr_intelligence.enabled`
+
+- Required: no
+- Default: `true`
+- Description: Enables/disables PR report generation on pull request CI runs.
+
+### `pr_intelligence.strict_mode`
+
+- Required: no
+- Default: `false`
+- Description: If `true`, fail the report job when diff generation cannot be resolved; otherwise emit fallback output and continue.
+
+### `pr_intelligence.hotspot_history_commits`
+
+- Required: no
+- Default: `200`
+- Description: Number of base-branch commits scanned for hotspot frequency checks.
+
+### `pr_intelligence.hotspot_threshold`
+
+- Required: no
+- Default: `6`
+- Description: Minimum prior touches in the hotspot history window to classify a changed file as a hotspot.
+
+### `pr_intelligence.ignore_patterns`
+
+- Required: no
+- Default: `""`
+- Description: Comma-separated shell glob patterns to exclude additional files from analysis.
+
 ## Notes
 
 - Values are treated as strings by shell scripts; use `true`/`false` for toggles.

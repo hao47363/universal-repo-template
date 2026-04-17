@@ -92,3 +92,21 @@ automation:
   # Required: no
   # Default: "pinned,security,never-stale"
   stale_exempt_pr_labels: "pinned,security,never-stale"
+
+pr_intelligence:
+  # Required: no
+  # Default: true
+  enabled: true
+  # Required: no
+  # Default: false
+  strict_mode: false
+  # Required: no
+  # Default: 200
+  hotspot_history_commits: 200
+  # Required: no
+  # Default: 6
+  hotspot_threshold: 6
+  # Required: no
+  # Default: ""
+  # Comma-separated shell patterns, e.g. "docs/**,**/*.snap"
+  ignore_patterns: ""

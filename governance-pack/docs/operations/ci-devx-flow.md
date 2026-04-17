@@ -19,6 +19,7 @@ This template is designed to stay language-agnostic while improving feedback spe
    - commit message format
    - PR title format
 3. `lint`, `test`, and `build` run as separate jobs (if enabled).
+4. `pr-intelligence` runs on pull requests and generates a deterministic `pr-report.md` artifact from `base...head`.
 
 ## Why this improves DevX
 
@@ -26,6 +27,16 @@ This template is designed to stay language-agnostic while improving feedback spe
 - **Less CI waste**: docs-only updates skip heavy install/lint/test/build steps.
 - **Safe defaults**: lint/test default to enabled, build defaults to disabled.
 - **Portable setup**: command execution is configured in YAML, not hardcoded by language.
+- **PR visibility**: every PR run emits a report with risk score, impact areas, and structural pattern detection.
+
+## PR Intelligence behavior
+
+- Script entrypoint: `sh ./governance-pack/scripts/generate_pr_report.sh pr-report.md`
+- Stateless output: report is fully regenerated each run (overwrite semantics).
+- PR lifecycle safe: compares base branch to current PR HEAD using a merge-base-aware range (`base...head`), so reruns/new commits/rebase/force-push still produce valid current-state output.
+- Deterministic scoring: score and findings derive only from git diff metadata and file paths.
+- Language agnostic: no language parsers or framework-specific services required.
+- Generated artifact: `pr-report.md` is uploaded by CI as `pr-report`.
 
 ## Project config reference
 
@@ -48,6 +59,13 @@ cache:
   path: ""
   key: ""
   restore_keys: ""
+
+pr_intelligence:
+  enabled: true
+  strict_mode: false
+  hotspot_history_commits: 200
+  hotspot_threshold: 6
+  ignore_patterns: ""
 ```
 
 ### Command examples by stack
@@ -120,5 +138,6 @@ Set a meaningful `key` that includes OS and lockfile hash when possible.
   - `Lint` (if enabled)
   - `Test` (if enabled)
   - `Build` (if enabled)
+  - `PR Intelligence Report` (if pull_request validation is required)
 - Require pull request review(s)
 - Require conversation resolution before merge

@@ -138,6 +138,31 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: sh ./governance-pack/scripts/validate_pr_title.sh "$PR_TITLE"
 
+  pr-intelligence:
+    name: PR Intelligence Report
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate PR report
+        env:
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        run: sh ./governance-pack/scripts/generate_pr_report.sh pr-report.md
+
+      - name: Upload PR report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-report
+          path: pr-report.md
+          if-no-files-found: error
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
