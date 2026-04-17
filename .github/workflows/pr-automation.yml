@@ -63,7 +63,14 @@ jobs:
               '- CI checks will run automatically.'
             ].join('\n');
 
-            await github.rest.pulls.create({
+            const { data: createdPr } = await github.rest.pulls.create({
               owner, repo, head: headBranch, base: baseBranch, title, body
+            });
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: createdPr.number,
+              body: '@coderabbitai full review'
             });
 
