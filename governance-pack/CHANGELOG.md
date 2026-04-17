@@ -18,7 +18,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Security
 
-## [0.4.0] - 2026-04-18
+## [0.4.1] - 2026-04-18
+
+### Fixed
+
+- Ensured `.github/workflows/ci.yml` always runs on `pull_request` events by removing top-level `pull_request.paths-ignore`, while keeping job-level heavy-check filters in place.
+- Corrected numstat rename-path handling in `governance-pack/scripts/generate_pr_report.sh` so ignore and churn logic use the renamed destination path.
+- Optimized hotspot detection in `governance-pack/scripts/generate_pr_report.sh` by aggregating file touch counts from one `git log --name-only` pass instead of per-file `git log` calls.
+- Simplified redundant ignore and classification glob patterns in `governance-pack/scripts/generate_pr_report.sh`.
+
+## [0.4.0] - 2026-04-17
 
 ### Added
 

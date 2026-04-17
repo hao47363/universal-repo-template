@@ -13,12 +13,6 @@ on:
   pull_request:
     branches:
       - "**"
-    paths-ignore:
-      - "**/*.md"
-      - "governance-pack/docs/**"
-      - ".github/*.md"
-      - ".github/ISSUE_TEMPLATE/**"
-      - ".github/pull_request_template.md"
 
 permissions:
   contents: read

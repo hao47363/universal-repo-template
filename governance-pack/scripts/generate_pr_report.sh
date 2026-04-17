@@ -80,7 +80,7 @@ fi
 is_ignored_file() {
   file_path="$1"
   case "$file_path" in
-    *.lock|*package-lock.json|*pnpm-lock.yaml|*yarn.lock|*composer.lock|*poetry.lock|*Pipfile.lock|*Cargo.lock|*Gemfile.lock)
+    *.lock|*package-lock.json|*pnpm-lock.yaml)
       return 0
       ;;
     *.min.js|*.min.css|*.map)
@@ -117,6 +117,19 @@ extract_path_from_name_status() {
       ;;
     *)
       printf '%s\n' "$line" | awk '{print $2}'
+      ;;
+  esac
+}
+
+extract_path_from_numstat() {
+  line="$1"
+  path_field="$(printf '%s\n' "$line" | awk '{ $1=""; $2=""; sub(/^  */, ""); print }')"
+  case "$path_field" in
+    *" => "*)
+      printf '%s\n' "${path_field##* => }"
+      ;;
+    *)
+      printf '%s\n' "$path_field"
       ;;
   esac
 }
@@ -160,7 +173,7 @@ while IFS= read -r line; do
   [ -z "$line" ] && continue
   added="$(printf '%s\n' "$line" | awk '{print $1}')"
   deleted="$(printf '%s\n' "$line" | awk '{print $2}')"
-  file_path="$(printf '%s\n' "$line" | awk '{print $3}')"
+  file_path="$(extract_path_from_numstat "$line")"
   [ -z "$file_path" ] && continue
   if is_ignored_file "$file_path"; then
     continue
@@ -194,7 +207,7 @@ while IFS= read -r path; do
   [ -z "$path" ] && continue
 
   case "$path" in
-    *api*|*routes*|*controller*|*endpoint*|openapi*|swagger*)
+    *api*|*routes*|*controller*|*endpoint*|swagger*)
       printf '%s\n' "$path" >> "$api_file"
       ;;
   esac
@@ -315,9 +328,17 @@ fi
 hotspot_level="LOW"
 max_hotspot_count=0
 if [ "$files_changed" -gt 0 ]; then
+  hotspot_counts_file="$tmp_dir/hotspot_counts.txt"
+  git log --no-merges --name-only --pretty=format: -n "$hotspot_history_commits" "$base_target" \
+    | awk 'NF { counts[$0]++ } END { for (path in counts) printf "%d\t%s\n", counts[path], path }' \
+    > "$hotspot_counts_file"
+
   while IFS= read -r path; do
     [ -z "$path" ] && continue
-    touch_count="$(git log --no-merges --pretty=format:%H -n "$hotspot_history_commits" "$base_target" -- "$path" | wc -l | tr -d ' ')"
+    touch_count="$(awk -F '\t' -v target="$path" '
+      $2 == target { print $1; found=1; exit }
+      END { if (!found) print 0 }
+    ' "$hotspot_counts_file")"
     case "$touch_count" in
       ''|*[!0-9]*) touch_count=0 ;;
     esac
