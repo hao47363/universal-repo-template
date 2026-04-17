@@ -386,7 +386,7 @@ impact_areas_file="$tmp_dir/impact_areas.txt"
 [ "$ui_count" -gt 0 ] && echo "UI" >> "$impact_areas_file"
 [ "$config_count" -gt 0 ] && echo "Configuration" >> "$impact_areas_file"
 impact_area_count="$(wc -l < "$impact_areas_file" | tr -d ' ')"
-impact_areas_csv="$(paste -sd ', ' "$impact_areas_file" 2>/dev/null || true)"
+impact_areas_csv="$(awk 'NF { items[++n]=$0 } END { for (i=1; i<=n; i++) printf "%s%s", items[i], (i<n ? ", " : "") }' "$impact_areas_file" 2>/dev/null || true)"
 [ -z "$impact_areas_csv" ] && impact_areas_csv="None"
 
 score_to_level() {
