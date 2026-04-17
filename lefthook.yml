@@ -1,0 +1,20 @@
+pre-commit:
+  parallel: false
+  commands:
+    branch-name:
+      run: ./scripts/validate_branch_name.sh
+    lint:
+      run: ./scripts/run_project_checks.sh lint
+
+commit-msg:
+  commands:
+    commit-message:
+      run: ./scripts/validate_commit_msg.sh {1}
+
+pre-push:
+  commands:
+    branch-name:
+      run: ./scripts/validate_branch_name.sh
+    test:
+      run: ./scripts/run_project_checks.sh test
+

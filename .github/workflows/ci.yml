@@ -1,0 +1,214 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "feature/**"
+      - "feat/**"
+      - "fix/**"
+      - "chore/**"
+      - "docs/**"
+      - "refactor/**"
+      - "test/**"
+      - "perf/**"
+      - "ci/**"
+      - "build/**"
+      - "style/**"
+      - "revert/**"
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - ".github/*.md"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/pull_request_template.md"
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - ".github/*.md"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/pull_request_template.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    name: Prepare config and change filters
+    runs-on: ubuntu-latest
+    outputs:
+      run_lint: ${{ steps.cfg.outputs.run_lint }}
+      run_test: ${{ steps.cfg.outputs.run_test }}
+      run_build: ${{ steps.cfg.outputs.run_build }}
+      cache_enabled: ${{ steps.cfg.outputs.cache_enabled }}
+      cache_path: ${{ steps.cfg.outputs.cache_path }}
+      cache_key: ${{ steps.cfg.outputs.cache_key }}
+      cache_restore_keys: ${{ steps.cfg.outputs.cache_restore_keys }}
+      run_heavy_checks: ${{ steps.filter.outputs.run_heavy_checks }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read project config
+        id: cfg
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_lint="$(sh ./scripts/run_project_checks.sh enabled lint)"
+          run_test="$(sh ./scripts/run_project_checks.sh enabled test)"
+          run_build="$(sh ./scripts/run_project_checks.sh enabled build)"
+          cache_enabled="$(sh ./scripts/read_project_config.sh cache.enabled || true)"
+          cache_path="$(sh ./scripts/read_project_config.sh cache.path || true)"
+          cache_key="$(sh ./scripts/read_project_config.sh cache.key || true)"
+          cache_restore_keys="$(sh ./scripts/read_project_config.sh cache.restore_keys || true)"
+
+          echo "run_lint=${run_lint:-true}" >> "$GITHUB_OUTPUT"
+          echo "run_test=${run_test:-true}" >> "$GITHUB_OUTPUT"
+          echo "run_build=${run_build:-false}" >> "$GITHUB_OUTPUT"
+          echo "cache_enabled=${cache_enabled:-false}" >> "$GITHUB_OUTPUT"
+          echo "cache_path=${cache_path:-}" >> "$GITHUB_OUTPUT"
+          echo "cache_key=${cache_key:-}" >> "$GITHUB_OUTPUT"
+          echo "cache_restore_keys=${cache_restore_keys:-}" >> "$GITHUB_OUTPUT"
+
+      - name: Detect code changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            run_heavy_checks:
+              - '**'
+              - '!**/*.md'
+              - '!docs/**'
+              - '!.github/*.md'
+              - '!.github/ISSUE_TEMPLATE/**'
+              - '!.github/pull_request_template.md'
+
+  validate-governance:
+    name: Validate naming and commit/PR conventions
+    runs-on: ubuntu-latest
+    needs: prepare
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate branch name
+        if: ${{ github.event_name != 'push' || (github.ref_name != 'main' && github.ref_name != 'develop' && github.ref_name != 'staging' && github.ref_name != 'dev') }}
+        env:
+          BRANCH_NAME: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+        run: ./scripts/validate_branch_name.sh "$BRANCH_NAME"
+
+      - name: Validate commit messages
+        if: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref_name != 'main' && github.ref_name != 'develop' && github.ref_name != 'staging' && github.ref_name != 'dev') }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            RANGE="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          else
+            RANGE="${{ github.event.before }}..${{ github.sha }}"
+          fi
+          COMMITS=$(git rev-list "$RANGE")
+          if [[ -z "$COMMITS" ]]; then
+            echo "No commits to validate in range: $RANGE"
+            exit 0
+          fi
+          for commit in $COMMITS; do
+            msg="$(git log --format=%s -n 1 "$commit")"
+            f="$(mktemp)"
+            printf '%s\n' "$msg" > "$f"
+            ./scripts/validate_commit_msg.sh "$f"
+            rm -f "$f"
+          done
+
+      - name: Validate PR title
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: ./scripts/validate_pr_title.sh "$PR_TITLE"
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - validate-governance
+    if: ${{ needs.prepare.outputs.run_lint == 'true' && needs.prepare.outputs.run_heavy_checks == 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore dependency cache (optional)
+        if: ${{ needs.prepare.outputs.cache_enabled == 'true' && needs.prepare.outputs.cache_path != '' && needs.prepare.outputs.cache_key != '' }}
+        uses: actions/cache@v4
+        with:
+          path: ${{ needs.prepare.outputs.cache_path }}
+          key: ${{ needs.prepare.outputs.cache_key }}
+          restore-keys: ${{ needs.prepare.outputs.cache_restore_keys }}
+
+      - name: Install
+        run: ./scripts/run_project_checks.sh install
+
+      - name: Run lint
+        run: ./scripts/run_project_checks.sh lint
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - validate-governance
+    if: ${{ needs.prepare.outputs.run_test == 'true' && needs.prepare.outputs.run_heavy_checks == 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore dependency cache (optional)
+        if: ${{ needs.prepare.outputs.cache_enabled == 'true' && needs.prepare.outputs.cache_path != '' && needs.prepare.outputs.cache_key != '' }}
+        uses: actions/cache@v4
+        with:
+          path: ${{ needs.prepare.outputs.cache_path }}
+          key: ${{ needs.prepare.outputs.cache_key }}
+          restore-keys: ${{ needs.prepare.outputs.cache_restore_keys }}
+
+      - name: Install
+        run: ./scripts/run_project_checks.sh install
+
+      - name: Run tests
+        run: ./scripts/run_project_checks.sh test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - validate-governance
+    if: ${{ needs.prepare.outputs.run_build == 'true' && needs.prepare.outputs.run_heavy_checks == 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore dependency cache (optional)
+        if: ${{ needs.prepare.outputs.cache_enabled == 'true' && needs.prepare.outputs.cache_path != '' && needs.prepare.outputs.cache_key != '' }}
+        uses: actions/cache@v4
+        with:
+          path: ${{ needs.prepare.outputs.cache_path }}
+          key: ${{ needs.prepare.outputs.cache_key }}
+          restore-keys: ${{ needs.prepare.outputs.cache_restore_keys }}
+
+      - name: Install
+        run: ./scripts/run_project_checks.sh install
+
+      - name: Run build
+        run: ./scripts/run_project_checks.sh build
+

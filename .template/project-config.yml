@@ -1,0 +1,46 @@
+stack: custom
+
+# Stack presets (pick one and customize):
+# - Next.js (npm):
+#   install: "npm ci"
+#   lint: "npm run lint"
+#   test: "npm test"
+#   build: "npm run build"
+# - Next.js (pnpm):
+#   install: "pnpm i --frozen-lockfile"
+#   lint: "pnpm lint"
+#   test: "pnpm test"
+#   build: "pnpm build"
+# - Laravel:
+#   install: "composer install"
+#   lint: "vendor/bin/pint --test"
+#   test: "php artisan test"
+#   build: ""
+# - Flutter:
+#   install: "flutter pub get"
+#   lint: "flutter analyze"
+#   test: "flutter test"
+#   build: "flutter build apk"
+# - Python:
+#   install: "pip install -r requirements.txt"
+#   lint: "ruff check ."
+#   test: "pytest -q"
+#   build: ""
+
+commands:
+  install: ""
+  lint: ""
+  test: ""
+  build: ""
+
+ci:
+  run_lint: true
+  run_test: true
+  run_build: false
+
+cache:
+  enabled: false
+  path: ""
+  key: ""
+  restore_keys: ""
+

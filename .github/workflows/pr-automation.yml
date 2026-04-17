@@ -1,0 +1,60 @@
+name: Auto Create Pull Request
+
+on:
+  push:
+    branches:
+      - "feature/**"
+      - "feat/**"
+      - "fix/**"
+      - "chore/**"
+      - "docs/**"
+      - "refactor/**"
+      - "test/**"
+      - "perf/**"
+      - "ci/**"
+      - "build/**"
+      - "style/**"
+      - "revert/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  auto-create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create PR if missing
+        uses: actions/github-script@v7
+        env:
+          BASE_BRANCH: main
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const headBranch = context.ref.replace('refs/heads/', '');
+            const baseBranch = process.env.BASE_BRANCH || 'main';
+
+            if (headBranch === baseBranch) return;
+
+            const { data: existing } = await github.rest.pulls.list({
+              owner, repo, state: 'open',
+              head: `${owner}:${headBranch}`,
+              base: baseBranch,
+            });
+            if (existing.length > 0) return;
+
+            const title = `${headBranch}: auto-created PR`;
+            const body = [
+              '## Summary',
+              '- This pull request was auto-created after pushing a branch that matches the naming policy.',
+              '',
+              '## Notes',
+              '- Update this description with implementation details.',
+              '- CI checks will run automatically.'
+            ].join('\n');
+
+            await github.rest.pulls.create({
+              owner, repo, head: headBranch, base: baseBranch, title, body
+            });
+

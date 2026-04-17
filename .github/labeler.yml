@@ -1,0 +1,15 @@
+type:docs:
+  - changed-files:
+      - any-glob-to-any-file: ["**/*.md", "docs/**"]
+
+area:ci:
+  - changed-files:
+      - any-glob-to-any-file: [".github/workflows/**", "scripts/**", "lefthook.yml"]
+
+area:template:
+  - changed-files:
+      - any-glob-to-any-file: [".template/**", "README.md"]
+
+area:governance:
+  - changed-files:
+      - any-glob-to-any-file: [".github/CODEOWNERS", ".github/pull_request_template.md", "docs/naming-conventions.md"]
