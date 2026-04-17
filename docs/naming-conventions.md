@@ -70,24 +70,14 @@ chore/update-ci
 Format:
 
 ```text
-<type>(<scope>): <short description>
+Title Case words, optionally slash-separated
 ```
-
-or:
-
-```text
-<type>: <short description>
-```
-
-Allowed `type`:
-
-`feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `perf`, `ci`, `build`, `style`, `revert`
 
 Examples:
 
 ```text
-feat(auth): add oauth callback handling
-docs: add setup guide
-ci(workflows): split checks into lint/test/build jobs
+Feature/Add Changelog
+Fix/Login Null Check
+Docs/Setup Guide
 ```
 

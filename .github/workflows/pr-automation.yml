@@ -53,7 +53,17 @@ jobs:
             });
             if (existing.length > 0) return;
 
-            const title = `${headBranch}: auto-created PR`;
+            const prettify = (segment) =>
+              segment
+                .split(/[-_]+/)
+                .filter(Boolean)
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+
+            const title = headBranch
+              .split('/')
+              .map((segment) => prettify(segment))
+              .join('/');
             const body = [
               '## Summary',
               '- This pull request was auto-created after pushing a branch that matches the naming policy.',

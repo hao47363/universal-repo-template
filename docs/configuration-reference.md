@@ -97,7 +97,7 @@ When both files define the same key, `.template/repo-settings.yml` takes precede
 
 - Required: no
 - Default: `feat,fix,chore,docs,refactor,test,perf,ci,build,style,revert`
-- Description: Comma-separated allowed Conventional Commit/PR title types.
+- Description: Comma-separated allowed Conventional Commit types.
 
 ### `automation.auto_pr_enabled`
 

@@ -9,17 +9,15 @@ if [ -z "$pr_title" ]; then
   exit 1
 fi
 
-conventional_types="$(sh ./scripts/get_config_value.sh governance.conventional_types "feat,fix,chore,docs,refactor,test,perf,ci,build,style,revert")"
-types_pattern="$(printf '%s' "$conventional_types" | tr -d ' ' | tr ',' '|')"
-pattern="^(${types_pattern})(\\([a-z0-9][a-z0-9._-]*\\))?: .+"
+# PR title rule:
+# - Human-readable title-case segments
+# - Slash-separated segments are allowed, e.g. "Feature/Add Changelog"
+pattern='^[A-Z][A-Za-z0-9]*(/[A-Z][A-Za-z0-9 ]*)*$'
 
 if ! printf '%s' "$pr_title" | grep -Eq "$pattern"; then
   echo "Invalid PR title format."
-  echo "Expected: <type>(<scope>): <message> or <type>: <message>"
-  echo "Example: feat(api): add account endpoint"
-  echo "Example: docs: add onboarding guide"
-  echo
-  echo "Allowed types: $conventional_types"
-  echo "Scope rules: lowercase letters, numbers, dot, underscore, dash"
+  echo "Expected: Title Case words, optionally slash-separated."
+  echo "Example: Feature/Add Changelog"
+  echo "Example: Fix/Login Null Check"
   exit 1
 fi
