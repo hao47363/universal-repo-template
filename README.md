@@ -61,12 +61,16 @@ lefthook install
 
 ## Documentation
 
-- `docs/naming-conventions.md` for branch/commit/PR title rules
-- `docs/ci-devx-flow.md` for CI optimization and DevX flow design
+- `docs/README.md` for full docs navigation
+- `docs/governance/naming-conventions.md` for branch/commit/PR title and variable naming rules
+- `docs/operations/ci-devx-flow.md` for CI optimization and DevX flow design
   - includes ready-to-use Laravel and Next.js command examples
-- `docs/linting-strategy.md` for universal + language-specific linting rules
+- `docs/governance/linting-strategy.md` for universal + language-specific linting rules
   - includes guidance for Next.js, Laravel, Flutter, and Python
 - `templates/lint/README.md` for copy-ready lint starter configs by stack
-- `docs/configuration-reference.md` for required/optional/default values of each setting
-- `docs/changelog-guidelines.md` for Keep a Changelog + SemVer release rules
+- `docs/reference/configuration-reference.md` for required/optional/default values of each setting
+- `docs/governance/changelog-guidelines.md` for Keep a Changelog + SemVer release rules
+- `docs/governance/release-versioning.md` for release tags and versioning policy
+- `docs/governance/code-quality-playbook.md` for mandatory/recommended quality rules and review checklist
+- `docs/governance/community-best-practices-report.md` for Stack Overflow/Reddit-informed recommendations
 
