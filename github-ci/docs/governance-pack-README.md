@@ -114,17 +114,17 @@ jobs:
 | Input | Purpose |
 | --- | --- |
 | `uses:` | Path to the reusable workflow on the **tooling** repo; **`@stable`** follows this repo’s integration branch (examples here use `stable`; use a **tag** or **`@<full_sha>`** to pin). |
-| `tooling_repository` | Repo that hosts **`.github/actions/*`**, root **`scripts/`**, and **`templates/`** when they are not in the app checkout (almost always the **same** repo as the `uses:` workflow host). |
-| `tooling_ref` | Branch, tag, or SHA on that repo for both composite actions and script checkouts (keep aligned with how you pin `universal-ci.yml`). |
+| `tooling_repository` | Repo whose **`scripts/`** and **`templates/`** are cloned inside the composites when the app does not vendor them (almost always the **same** repo as the `uses:` workflow host). |
+| `tooling_ref` | Branch, tag, or SHA on **`tooling_repository`** for that checkout (keep aligned with how you pin `universal-ci.yml`). Composite **`uses:`** lines in `universal-ci.yml` are fixed to **`hao47363/better-dev-ci/.../actions/...@stable`** because GitHub forbids `inputs` in `steps.uses`. |
 | `tooling_auth_mode` | `none` if no PAT is needed; `pat` if the tooling repo is private (see below). |
 | `secrets: inherit` | Passes secrets into the reusable workflow (needed when using `GH_CI_REPO_TOKEN`). |
 
 **Cross-repo constraints (typical failures):**
 
-- **`tooling_repository` must contain the composites** (`setup-governance-pack`, `setup-runtime`) and the script tree. A checkout-only mirror without `.github/actions/` will fail when the job loads those actions.
-- **`tooling_ref` must exist** on that repository. If you pin `uses: …/universal-ci.yml@stable`, pass `tooling_ref: stable` (or the same SHA) so composites match the workflow revision you intend.
+- **`tooling_repository` must name the repo** that hosts root **`scripts/`** and **`templates/`** (and the same repo that publishes the composites on GitHub). A mirror without those trees will fail when the job runs.
+- **`tooling_ref` must exist** on **`tooling_repository`**. If you pin `uses: …/universal-ci.yml@stable`, pass `tooling_ref: stable` (or the same SHA) so the **scripts/** checkout inside the composites matches the workflow pin.
 - **Do not set `tooling_repository` to the application repo** unless you have copied `.github/actions/` and vendored `scripts/` there on purpose.
-- GitHub evaluates **`uses: ./…` against the caller workspace before steps run**, so this template references composites as **`owner/repo/.github/actions/…@ref`** via `tooling_repository` + `tooling_ref`; a prior checkout step cannot “materialize” local composites for another repo.
+- GitHub evaluates **`uses: ./…` against the caller workspace before steps run**, so local `./.github/actions/…` cannot point into another repo. **`steps.*.uses` cannot reference `inputs`**, so `universal-ci.yml` loads **`setup-governance-pack`** / **`setup-runtime`** from a **literal** `hao47363/better-dev-ci/.../actions/...@stable`; forked tooling must replace those lines or vendor this workflow.
 
 **Private tooling repo** — Create a PAT with **Contents: Read** scoped to the tooling repo. In the application repo, add secret **`GH_CI_REPO_TOKEN`**, then set:
 
@@ -283,4 +283,4 @@ Pin `uses: …/universal-ci.yml@<full_commit_sha>` for immutability, stay on **`
 
 ### CI fails with “Can’t find `action.yml`” under my app repo path
 
-Cross-repo reusable workflows treat **`uses: ./…`** as paths **inside the application repository**, and they are evaluated **before** steps run—so composites cannot be “checked out first” into a subfolder of the app workspace. This template loads **`setup-governance-pack`** / **`setup-runtime`** from **`tooling_repository`** @ **`tooling_ref`** instead. Ensure those inputs match the repo that actually contains `.github/actions/*` and align **`tooling_ref`** with how you pin `universal-ci.yml`. See [Centralized CI setup](./central-ci-setup.md#cross-repo-reusable-workflow-constraints).
+Cross-repo reusable workflows treat **`uses: ./…`** as paths **inside the application repository**, and they are evaluated **before** steps run—so composites cannot be “checked out first” into a subfolder of the app workspace. **`universal-ci.yml`** loads **`setup-governance-pack`** / **`setup-runtime`** from a **literal** `hao47363/better-dev-ci/.../actions/...@stable` (GitHub forbids `inputs` in `steps.uses`). Pass **`tooling_repository`** and **`tooling_ref`** so the **scripts/** checkout inside those actions matches your tooling repo and pin. See [Centralized CI setup](./central-ci-setup.md#cross-repo-reusable-workflow-constraints).

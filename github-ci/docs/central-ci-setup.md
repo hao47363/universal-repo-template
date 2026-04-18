@@ -28,8 +28,8 @@ Full operational steps, org settings, secrets, versioning, and consumer YAML sni
 
 When the application repository calls `uses: <tooling>/.github/workflows/universal-ci.yml@<ref>`:
 
-1. **Composites are loaded from `tooling_repository` @ `tooling_ref`.**  
-   GitHub resolves **`uses: ./…` only inside the caller repository** and **before** job steps run, so `universal-ci.yml` must reference `setup-governance-pack` and `setup-runtime` as **`owner/repo/.github/actions/<name>@ref`** (built from the same `tooling_repository` / `tooling_ref` inputs used to clone `scripts/` and `templates/`). A “checkout tooling into the workspace, then `uses: ./subdir/...`” pattern does **not** work for another repo’s composites.
+1. **Composite `uses:` lines are literal `owner/repo/.github/actions/<name>@stable`.**  
+   GitHub **does not allow** the `inputs` context inside **`steps.*.uses`**, so the reusable workflow cannot build composite paths from `tooling_repository` / `tooling_ref` there. Those inputs still control the **checkout of `scripts/` and `templates/`** inside the composites. **`uses: ./…` is resolved only in the caller repo** and **before** steps run, so a “checkout tooling then `uses: ./subdir/...`” pattern does **not** work for another repo’s composites.
 
 2. **`tooling_repository` must be the repo that actually contains** `.github/actions/setup-governance-pack`, `.github/actions/setup-runtime`, and (unless you vendor them in the app) root `scripts/` and `templates/`. Usually this is **identical** to the repository in the workflow `uses:` line.
 

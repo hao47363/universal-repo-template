@@ -26,6 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 
+- Cross-repo callers: GitHub **rejects** `inputs.*` inside **`steps.*.uses`** when parsing the called reusable workflow (`Unrecognized named-value: 'inputs'`). `universal-ci` now references **`hao47363/better-dev-ci/.github/actions/setup-governance-pack@stable`** and **`.../setup-runtime@stable`** as literal composite locations; **`tooling_repository`** / **`tooling_ref`** still configure the tooling checkout **inside** those composites.
+
 ### Security
 
 ## [0.5.1] - 2026-04-18
