@@ -15,7 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
-- `tooling_repository` / `tooling_ref` defaults in `universal-ci.yml` and `setup-governance-pack` now use **`hao47363/better-dev-ci`** and **`main`** (maintainer default; production callers should still pass explicit values matching their published tooling repo and pin).
+- Docs and `templates/consumer-quickstart/`: consumer examples pin **`@stable`** / `tooling_ref: stable` as the integration branch; release tags and commit SHAs remain optional for slower upgrades.
+- `tooling_repository` / `tooling_ref` defaults in `universal-ci.yml` and `setup-governance-pack` now use **`hao47363/better-dev-ci`** and **`stable`** (maintainer default; production callers should still pass explicit values matching their published tooling repo and pin).
 - README, `docs/governance-pack-README.md`, and `docs/central-ci-setup.md`: document cross-repo composite constraints and `tooling_repository` requirements.
 
 ### Deprecated

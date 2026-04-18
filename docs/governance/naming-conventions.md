@@ -42,6 +42,7 @@ Allowed `type`:
 Exempt branches:
 
 - `main`
+- `stable`
 - `develop`
 - `dev`
 - `staging`

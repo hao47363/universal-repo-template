@@ -1,6 +1,6 @@
 # Central CI tooling (`github-ci`)
 
-This directory is a **publishable mirror** of reusable GitHub Actions assets: `universal-*.yml` workflows, `.github/actions/setup-governance-pack/`, `.github/actions/setup-runtime/`, root `scripts/`, `templates/`, and `docs/`. Application repositories **enable CI on GitHub** by delegating with a small caller workflow (`uses: …/universal-ci.yml@…`); they do not vendor the full template workflow graph. Pull updates from this repository by tag or SHA.
+This directory is a **publishable mirror** of reusable GitHub Actions assets: `universal-*.yml` workflows, `.github/actions/setup-governance-pack/`, `.github/actions/setup-runtime/`, root `scripts/`, `templates/`, and `docs/`. Application repositories **enable CI on GitHub** by delegating with a small caller workflow (`uses: …/universal-ci.yml@…`); they do not vendor the full template workflow graph. Pull updates from this repository by **integration branch** (for example **`stable`**), **tag**, or **SHA**.
 
 **Canonical edits** live in the template monorepo at the repository root (`.github/workflows/`, `.github/actions/`, `scripts/`, `templates/`, `docs/`). After changing those, run `./scripts/sync-github-ci-mirror.sh` from that root, then commit the updated `github-ci/` tree and push to your published tooling repository (for example **`hao47363/better-dev-ci`**).
 
@@ -9,7 +9,7 @@ This directory is a **publishable mirror** of reusable GitHub Actions assets: `u
 1. Create or reuse the GitHub repository (for example `hao47363/better-dev-ci`).
 2. Ensure the default branch root contains `.github/`, `scripts/`, `templates/`, `docs/`, and this `README.md`.
 3. Enable **Actions** on the repository.
-4. Tag a release for consumers, for example: `git tag -a v1 -m "Central CI v1"` and `git push origin v1`.
+4. Optional: tag a semver release for consumers who pin tags instead of `stable`, for example: `git tag -a v1.0.0 -m "Central CI v1.0.0"` and `git push origin v1.0.0`.
 
 ## Organization settings (private central repo)
 
@@ -30,11 +30,12 @@ Optional at scale: mint short-lived tokens with a **GitHub App** installation in
 
 ## Versioning policy
 
-- **Floating tags** (`v1`) update every consumer that references the tag when you move it.
+- **Integration branch** (`stable`) — Most consumers pin `uses: …/universal-ci.yml@stable` and `tooling_ref: stable` to track line updates on each push.
+- **Floating tags** (for example `v1`) update every consumer that references the tag when you move it.
 - **Immutable SHAs** — Pin `uses: …/universal-ci.yml@<full_sha>` for maximum stability; bump the SHA when you intentionally adopt changes.
-- **Breaking changes** to inputs or job structure should move consumers to a new major tag (for example `v2`).
+- **Breaking changes** to inputs or job structure should move semver consumers to a new major tag (for example `v2`) or communicate a coordinated switch on `stable`.
 
-After any change to reusable YAML, composite actions, `scripts/`, `templates/`, or `docs/`, tag a new release (or move `v1` deliberately) and communicate the upgrade path to application teams.
+After any change to reusable YAML, composite actions, `scripts/`, `templates/`, or `docs/`, merge to **`stable`** (and tag or announce if your org relies on semver pins).
 
 ## Copy-paste quick-starts (application repos)
 
@@ -58,10 +59,10 @@ permissions:
 
 jobs:
   universal-ci:
-    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@v1
+    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@stable
     with:
       tooling_repository: hao47363/better-dev-ci
-      tooling_ref: v1
+      tooling_ref: stable
       tooling_auth_mode: none
     secrets: inherit
 ```
@@ -79,11 +80,11 @@ Empty command strings skip that step with a log line (the job still succeeds).
 ```yaml
 jobs:
   ci:
-    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@v1
+    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@stable
     with:
       use_project_commands: false
       tooling_repository: hao47363/better-dev-ci
-      tooling_ref: v1
+      tooling_ref: stable
       tooling_auth_mode: none
       runtime: node
       runtime_version: "20"
@@ -106,11 +107,11 @@ jobs:
 ```yaml
 jobs:
   ci:
-    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@v1
+    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@stable
     with:
       use_project_commands: false
       tooling_repository: hao47363/better-dev-ci
-      tooling_ref: v1
+      tooling_ref: stable
       tooling_auth_mode: none
       runtime: php
       runtime_version: "8.3"
@@ -129,11 +130,11 @@ jobs:
 ```yaml
 jobs:
   ci:
-    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@v1
+    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@stable
     with:
       use_project_commands: false
       tooling_repository: hao47363/better-dev-ci
-      tooling_ref: v1
+      tooling_ref: stable
       tooling_auth_mode: none
       runtime: flutter
       runtime_version: ""
@@ -170,7 +171,7 @@ jobs:
     uses: ./.github/workflows/universal-ci.yml
     with:
       tooling_repository: hao47363/better-dev-ci
-      tooling_ref: v1
+      tooling_ref: stable
       tooling_auth_mode: none
     secrets: inherit
 ```

@@ -13,7 +13,7 @@ The **setup-governance-pack** composite action:
 ## Where the “single update” lives
 
 - **In this monorepo** — Edit `universal-*.yml`, the composite action, or root `scripts/`, `templates/`, and `docs/`, then run `./scripts/sync-github-ci-mirror.sh` to refresh the publishable mirror in [`github-ci/`](../github-ci/).
-- **On GitHub** — Push the `github-ci/` mirror to your tooling repository (for example `hao47363/better-dev-ci`) and tag releases (`v1`, …). Application repositories pin `uses: …/universal-ci.yml@v1`.
+- **On GitHub** — Push the `github-ci/` mirror to your tooling repository (for example `hao47363/better-dev-ci`). Application repositories typically pin the **`stable`** branch on `uses:` and `tooling_ref`; add **release tags** or **commit SHAs** when you want explicit, slower-moving pins.
 
 Full operational steps, org settings, secrets, versioning, and consumer YAML snippets are documented in the [Central tooling README](../github-ci/README.md).
 
@@ -22,7 +22,7 @@ Full operational steps, org settings, secrets, versioning, and consumer YAML sni
 | Repository layout | `uses:` line |
 | --- | --- |
 | Same repo as the reusable files (this template) | `./.github/workflows/universal-ci.yml` (same commit as the caller; best for PR validation) |
-| Minimal app repo with only thin workflows | `hao47363/better-dev-ci/.github/workflows/universal-ci.yml@v1` (or a commit SHA) |
+| Minimal app repo with only thin workflows | `hao47363/better-dev-ci/.github/workflows/universal-ci.yml@stable` (or a tag / commit SHA) |
 
 ## Cross-repo reusable workflow constraints
 
@@ -59,11 +59,11 @@ permissions:
 
 jobs:
   ci:
-    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@v1
+    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@stable
     with:
       use_project_commands: false
       tooling_repository: hao47363/better-dev-ci
-      tooling_ref: v1
+      tooling_ref: stable
       tooling_auth_mode: none
       runtime: node
       runtime_version: "20"

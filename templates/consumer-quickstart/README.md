@@ -11,7 +11,7 @@ These folders are **examples only**: nothing here runs in the tooling repo. Copy
 
 ## Before you copy
 
-1. **Pin the same ref everywhere** — the `@v1` (or `@sha`) on `uses: …/universal-ci.yml@…` must match **`tooling_ref`** (and exist on **`tooling_repository`**).
+1. **Pin the same ref everywhere** — the `@stable` (or **tag** / **SHA**) on `uses: …/universal-ci.yml@…` must match **`tooling_ref`** (and exist on **`tooling_repository`**).
 2. **Replace owner/repo** if your published tooling is not **`hao47363/better-dev-ci`**.
 3. **Optional** — uncomment `runtime_version` in `ci.yml` to pin Node, PHP, or Flutter.
 4. **pnpm / Yarn** — keep `stack: nextjs` but set `commands.install`, `commands.lint`, etc. in `repo-settings.yml` (presets assume **npm**).

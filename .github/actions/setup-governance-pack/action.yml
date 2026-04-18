@@ -14,7 +14,7 @@ inputs:
   tooling_ref:
     description: Git ref (branch or tag) for the tooling repository checkout.
     required: false
-    default: main
+    default: stable
   tooling_auth_mode:
     description: Use pat with tooling_token for private tooling repositories; use none for public tooling.
     required: false

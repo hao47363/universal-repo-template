@@ -18,10 +18,10 @@ concurrency:
 
 jobs:
   universal-ci:
-    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@v1
+    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@stable
     with:
       tooling_repository: hao47363/better-dev-ci
-      tooling_ref: v1
+      tooling_ref: stable
       tooling_auth_mode: none
       runtime: php
       # runtime_version: "8.3"

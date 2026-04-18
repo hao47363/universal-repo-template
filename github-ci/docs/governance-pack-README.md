@@ -17,9 +17,9 @@ Centralized **GitHub Actions** workflows, scripts, and governance docs so many a
 | --- | --- |
 | **This repository** | Source of truth for workflows under `.github/`, composites, `scripts/`, `templates/`, and `docs/`. |
 | **[`github-ci/`](../github-ci/) mirror** | Publishable tree you push to a dedicated tooling repo on GitHub (for example `hao47363/better-dev-ci`). |
-| **Each application repo** | Declares `uses: …/universal-ci.yml@<tag-or-sha>` and adds `.template/repo-settings.yml`. |
+| **Each application repo** | Declares `uses: …/universal-ci.yml@<branch|tag|sha>` and adds `.template/repo-settings.yml`. |
 
-Maintainers refresh the published repo from here with [`../scripts/sync-github-ci-mirror.sh`](../scripts/sync-github-ci-mirror.sh), then tag releases (for example `v1`) for consumers to pin.
+Maintainers refresh the published repo from here with [`../scripts/sync-github-ci-mirror.sh`](../scripts/sync-github-ci-mirror.sh), then push to the integration branch (for example **`stable`**). Consumers usually pin that branch on `uses:` and `tooling_ref`; add **release tags** or **commit SHAs** when you want slower, explicit upgrades.
 
 ---
 
@@ -65,13 +65,13 @@ An organization owner (or admin) must allow application repositories to call wor
 
 ### 2. Tooling repository layout
 
-The published repo (for example **`hao47363/better-dev-ci`**) must include on its default branch:
+The published repo (for example **`hao47363/better-dev-ci`**) must include on its default branch (this project uses **`stable`**):
 
 - `.github/workflows/universal-ci.yml`
 - Composite actions under `.github/actions/`
 - Repository root: `scripts/`, `templates/`, `docs/`
 
-Tag a consumer reference after each reviewed release (`v1`, or a **full commit SHA** for immutability). Consumers pin `uses: …/universal-ci.yml@v1` or `@<sha>`.
+After each reviewed change on the tooling repo, consumers pick up updates when they pin the **`stable`** branch on both `uses:` and `tooling_ref`. For immutability, pin a **release tag** or **full commit SHA** instead.
 
 ### 3. Application repository: enable Actions
 
@@ -99,10 +99,10 @@ permissions:
 
 jobs:
   universal-ci:
-    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@v1
+    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@stable
     with:
       tooling_repository: hao47363/better-dev-ci
-      tooling_ref: v1
+      tooling_ref: stable
       tooling_auth_mode: none
     secrets: inherit
 ```
@@ -111,7 +111,7 @@ jobs:
 
 | Input | Purpose |
 | --- | --- |
-| `uses:` | Path to the reusable workflow on the **tooling** repo; `@v1` is a tag (use `@<full_sha>` for a fixed revision). |
+| `uses:` | Path to the reusable workflow on the **tooling** repo; **`@stable`** follows this repo’s integration branch (examples here use `stable`; use a **tag** or **`@<full_sha>`** to pin). |
 | `tooling_repository` | Repo that hosts **`.github/actions/*`**, root **`scripts/`**, and **`templates/`** when they are not in the app checkout (almost always the **same** repo as the `uses:` workflow host). |
 | `tooling_ref` | Branch, tag, or SHA on that repo for both composite actions and script checkouts (keep aligned with how you pin `universal-ci.yml`). |
 | `tooling_auth_mode` | `none` if no PAT is needed; `pat` if the tooling repo is private (see below). |
@@ -120,7 +120,7 @@ jobs:
 **Cross-repo constraints (typical failures):**
 
 - **`tooling_repository` must contain the composites** (`setup-governance-pack`, `setup-runtime`) and the script tree. A checkout-only mirror without `.github/actions/` will fail when the job loads those actions.
-- **`tooling_ref` must exist** on that repository. If you pin `uses: …/universal-ci.yml@main`, pass `tooling_ref: main` (or the same SHA) so composites match the workflow revision you intend.
+- **`tooling_ref` must exist** on that repository. If you pin `uses: …/universal-ci.yml@stable`, pass `tooling_ref: stable` (or the same SHA) so composites match the workflow revision you intend.
 - **Do not set `tooling_repository` to the application repo** unless you have copied `.github/actions/` and vendored `scripts/` there on purpose.
 - GitHub evaluates **`uses: ./…` against the caller workspace before steps run**, so this template references composites as **`owner/repo/.github/actions/…@ref`** via `tooling_repository` + `tooling_ref`; a prior checkout step cannot “materialize” local composites for another repo.
 
@@ -129,10 +129,10 @@ jobs:
 ```yaml
 jobs:
   universal-ci:
-    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@v1
+    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@stable
     with:
       tooling_repository: hao47363/better-dev-ci
-      tooling_ref: v1
+      tooling_ref: stable
       tooling_auth_mode: pat
     secrets: inherit
 ```
@@ -148,7 +148,7 @@ Under [`templates/consumer-quickstart/`](../templates/consumer-quickstart/README
 - **`flutter/`** — `runtime: flutter`; empty **`commands.*`** use **Flutter** presets.
 - **`custom/`** — `runtime: none`; **`commands.*`** are filled with **example npm lines** you should replace for your stack.
 
-Copy each folder’s `.github/workflows/ci.yml` to **`.github/workflows/ci.yml`** and `.template/repo-settings.yml` to **`.template/repo-settings.yml`**. Keep **`uses:`** `@…` and **`tooling_ref`** on the **same tag or SHA**. Swap **`hao47363/better-dev-ci`** if your tooling repo differs.
+Copy each folder’s `.github/workflows/ci.yml` to **`.github/workflows/ci.yml`** and `.template/repo-settings.yml` to **`.template/repo-settings.yml`**. Keep **`uses:`** `@…` and **`tooling_ref`** on the **same branch name, tag, or SHA**. Swap **`hao47363/better-dev-ci`** if your tooling repo differs.
 
 ### 6. Project configuration
 
@@ -181,7 +181,7 @@ Empty `commands.*` values use [stack defaults](#stack-defaults). Override any st
 
 ## What application repositories need
 
-- One workflow under `.github/workflows/` that **`uses:`** the published `universal-ci.yml` (tag or SHA).
+- One workflow under `.github/workflows/` that **`uses:`** the published `universal-ci.yml` (for example branch **`stable`**, a tag, or SHA).
 - **`.template/repo-settings.yml`** for default project-command mode; **`.template/project-config.yml`** is an optional legacy fallback for missing keys.
 - **Actions enabled**, and **`GH_CI_REPO_TOKEN`** when the tooling repo is private.
 
@@ -268,7 +268,7 @@ Any non-empty `commands.*` overrides that step only.
 
 ### How do we pin CI so upgrades are deliberate?
 
-Pin `uses: …/universal-ci.yml@<full_commit_sha>`, or move a floating tag like `v1` only after review. See [Release/versioning](./governance/release-versioning.md) and [github-ci/README.md](../README.md).
+Pin `uses: …/universal-ci.yml@<full_commit_sha>` for immutability, stay on **`stable`** for continuous updates, or use **semver tags** only after review. See [Release/versioning](./governance/release-versioning.md) and [github-ci/README.md](../README.md).
 
 ### Can we customize install, lint, test, and build?
 

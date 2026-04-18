@@ -18,7 +18,7 @@ This repository follows Semantic Versioning and tag-based releases.
 
 ## Minimum release checklist
 
-- Merge approved changes into `main`.
+- Merge approved changes into `stable`.
 - Ensure CI is green.
 - Curate and finalize `CHANGELOG.md` entries.
 - Create and push release tag (`vX.Y.Z`).

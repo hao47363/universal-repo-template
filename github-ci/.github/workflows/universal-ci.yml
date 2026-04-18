@@ -12,7 +12,7 @@ on:
       tooling_ref:
         type: string
         description: Git ref (tag, branch, or SHA) on tooling_repository for composites and script checkouts.
-        default: main
+        default: stable
       tooling_auth_mode:
         type: string
         description: pat to pass GH_CI_REPO_TOKEN for private tooling; none for public tooling checkouts.
