@@ -1,0 +1,23 @@
+name: PR automation
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - master
+      - develop
+      - staging
+      - dev
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  pr-automation:
+    uses: hao47363/better-dev-ci/.github/workflows/universal-pr-automation.yml@stable
+    with:
+      tooling_repository: hao47363/better-dev-ci
+      tooling_ref: stable
+      tooling_auth_mode: none
+    secrets: inherit

@@ -114,6 +114,12 @@ The **Prepare** job’s first step validates `tooling_repository` and `tooling_r
 - Default: `feat,fix,chore,docs,refactor,test,perf,ci,build,style,revert`
 - Description: Comma-separated allowed Conventional Commit types.
 
+### `automation.labeler_enabled`
+
+- Required: no
+- Default: `true`
+- Description: Enables/disables the labeler workflow (`.github/labeler.yml`).
+
 ### `automation.auto_pr_enabled`
 
 - Required: no

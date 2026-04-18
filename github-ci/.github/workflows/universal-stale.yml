@@ -1,0 +1,63 @@
+name: Universal stale management (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      tooling_repository:
+        type: string
+        description: Repository that hosts root scripts/ and templates/ when not vendored in the app checkout.
+        default: hao47363/better-dev-ci
+      tooling_ref:
+        type: string
+        description: Git ref on tooling_repository for the governance pack checkout.
+        default: stable
+      tooling_auth_mode:
+        type: string
+        description: pat with GH_CI_REPO_TOKEN for private tooling; none for public.
+        default: none
+    secrets:
+      GH_CI_REPO_TOKEN:
+        description: Optional PAT with read access to tooling_repository when tooling_auth_mode is pat.
+        required: false
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup governance pack
+        uses: hao47363/better-dev-ci/.github/actions/setup-governance-pack@stable
+        with:
+          fetch_depth: "1"
+          tooling_repository: ${{ inputs.tooling_repository }}
+          tooling_ref: ${{ inputs.tooling_ref }}
+          tooling_auth_mode: ${{ inputs.tooling_auth_mode }}
+          tooling_token: ${{ secrets.GH_CI_REPO_TOKEN }}
+
+      - name: Read stale settings
+        id: cfg
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "enabled=$(sh ./scripts/get_config_value.sh automation.stale_enabled true)" >> "$GITHUB_OUTPUT"
+          echo "days_before_stale=$(sh ./scripts/get_config_value.sh automation.stale_days_before_stale 30)" >> "$GITHUB_OUTPUT"
+          echo "days_before_close=$(sh ./scripts/get_config_value.sh automation.stale_days_before_close 14)" >> "$GITHUB_OUTPUT"
+          echo "exempt_issue_labels=$(sh ./scripts/get_config_value.sh automation.stale_exempt_issue_labels pinned,security,never-stale)" >> "$GITHUB_OUTPUT"
+          echo "exempt_pr_labels=$(sh ./scripts/get_config_value.sh automation.stale_exempt_pr_labels pinned,security,never-stale)" >> "$GITHUB_OUTPUT"
+
+      - name: Mark stale items
+        if: ${{ steps.cfg.outputs.enabled == 'true' }}
+        uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-issue-message: "This issue has been automatically marked as stale due to inactivity."
+          stale-pr-message: "This PR has been automatically marked as stale due to inactivity."
+          close-issue-message: "Closing this issue due to prolonged inactivity. Reopen if still relevant."
+          close-pr-message: "Closing this PR due to prolonged inactivity. Reopen if work resumes."
+          days-before-stale: ${{ steps.cfg.outputs.days_before_stale }}
+          days-before-close: ${{ steps.cfg.outputs.days_before_close }}
+          exempt-issue-labels: ${{ steps.cfg.outputs.exempt_issue_labels }}
+          exempt-pr-labels: ${{ steps.cfg.outputs.exempt_pr_labels }}

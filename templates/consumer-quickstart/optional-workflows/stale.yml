@@ -1,0 +1,19 @@
+name: Stale
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    uses: hao47363/better-dev-ci/.github/workflows/universal-stale.yml@stable
+    with:
+      tooling_repository: hao47363/better-dev-ci
+      tooling_ref: stable
+      tooling_auth_mode: none
+    secrets: inherit

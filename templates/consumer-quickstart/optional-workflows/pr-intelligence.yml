@@ -1,0 +1,24 @@
+name: PR Intelligence
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - edited
+      - ready_for_review
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  pr-intelligence:
+    uses: hao47363/better-dev-ci/.github/workflows/universal-pr-intelligence.yml@stable
+    with:
+      tooling_repository: hao47363/better-dev-ci
+      tooling_ref: stable
+      tooling_auth_mode: none
+    secrets: inherit

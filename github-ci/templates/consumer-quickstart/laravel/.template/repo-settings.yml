@@ -14,3 +14,30 @@ ci:
   run_lint: true
   run_test: true
   run_build: false
+
+# Optional GitHub Actions: copy thin callers from the tooling repo’s
+# `templates/consumer-quickstart/optional-workflows/` into `.github/workflows/`
+# in this repository (PR automation, stale, labeler, PR intelligence). Keys below
+# default to on (`true`); set a flag to `false` to disable that automation.
+
+governance:
+  exempt_branches: "main,develop,staging,dev"
+  branch_types: "feature,feat,fix,chore,docs,refactor,test,perf,ci,build,style,revert"
+  conventional_types: "feat,fix,chore,docs,refactor,test,perf,ci,build,style,revert"
+
+automation:
+  labeler_enabled: true
+  auto_pr_enabled: true
+  auto_pr_base_branch: "main"
+  stale_enabled: true
+  stale_days_before_stale: 30
+  stale_days_before_close: 14
+  stale_exempt_issue_labels: "pinned,security,never-stale"
+  stale_exempt_pr_labels: "pinned,security,never-stale"
+
+pr_intelligence:
+  enabled: true
+  strict_mode: false
+  hotspot_history_commits: 200
+  hotspot_threshold: 6
+  ignore_patterns: ""

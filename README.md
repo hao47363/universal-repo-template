@@ -30,7 +30,7 @@ Maintainers refresh the published repo from here with [`scripts/sync-github-ci-m
 - **Configurable pipelines** — `install` / `lint` / `test` / `build` driven by [`.template/repo-settings.yml`](.template/repo-settings.yml) and [`scripts/run_project_checks.sh`](scripts/run_project_checks.sh) when `use_project_commands: true`, or explicit commands from the caller when `use_project_commands: false`.
 - **Stack presets** — sensible defaults for Laravel, Next.js, Flutter, and Python when command fields are left empty.
 - **Copy-paste starters** — [`templates/consumer-quickstart/`](templates/consumer-quickstart/README.md) provides ready-made `ci.yml` + `repo-settings.yml` pairs for common stacks.
-- **Optional extras** — PR automation, labeler, stale workflows (thin callers can point at the same tooling repo); [Lefthook](lefthook.yml) for optional local hooks (CI remains authoritative).
+- **Optional extras** — PR automation, PR intelligence, labeler, and stale via additional reusable workflows (`universal-pr-automation.yml`, `universal-pr-intelligence.yml`, `universal-labeler.yml`, `universal-stale.yml`); thin caller examples live under [`templates/consumer-quickstart/optional-workflows/`](templates/consumer-quickstart/optional-workflows/README.md). Flags in **`.template/repo-settings.yml`** default to **on** (`true`) unless you set them to `false`. [Lefthook](lefthook.yml) remains optional for local hooks (CI stays authoritative).
 - **Documentation** — release policy, linting strategy, naming conventions, and operations guides under [`docs/`](docs/).
 
 Root [`CHANGELOG.md`](CHANGELOG.md) tracks this template and tooling. Each application keeps its own app-level `README.md` and changelog; those are unrelated to wiring central CI.
@@ -43,6 +43,7 @@ Root [`CHANGELOG.md`](CHANGELOG.md) tracks this template and tooling. Each appli
 | --- | --- |
 | Wire a new app repo to central CI | [Set up CI on GitHub](#set-up-ci-on-github) |
 | Copy a ready-made `ci.yml` + `repo-settings.yml` for my stack | [Copy-paste quick-starts](#5-copy-paste-quick-starts-laravel-nextjs-flutter-custom) |
+| Add PR automation, stale, labeler, or PR intelligence | [`templates/consumer-quickstart/optional-workflows/`](templates/consumer-quickstart/optional-workflows/README.md) |
 | See workflow inputs and YAML knobs | [Configuration reference](docs/reference/configuration-reference.md) |
 | Understand org settings and tokens | [Centralized CI setup](docs/central-ci-setup.md) · [Consumer guide](github-ci/README.md) |
 | Browse governance and ops docs | [Documentation map](#documentation-map) |
@@ -68,6 +69,7 @@ An organization owner (or admin) must allow application repositories to call wor
 The published repo (for example **`hao47363/better-dev-ci`**) must include on its **GitHub default branch** (this project uses **`stable`**) at least:
 
 - `.github/workflows/universal-ci.yml`
+- Optional: `universal-pr-automation.yml`, `universal-pr-intelligence.yml`, `universal-stale.yml`, `universal-labeler.yml` (app repos add their own thin callers that `uses:` these files)
 - Composite actions under `.github/actions/`
 - Repository root: `scripts/`, `templates/`, `docs/`
 

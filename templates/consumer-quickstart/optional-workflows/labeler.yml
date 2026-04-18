@@ -1,0 +1,17 @@
+name: Labeler
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  labeler:
+    uses: hao47363/better-dev-ci/.github/workflows/universal-labeler.yml@stable
+    with:
+      tooling_repository: hao47363/better-dev-ci
+      tooling_ref: stable
+      tooling_auth_mode: none
+    secrets: inherit

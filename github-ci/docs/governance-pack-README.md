@@ -30,7 +30,7 @@ Maintainers refresh the published repo from here with [`../scripts/sync-github-c
 - **Configurable pipelines** — `install` / `lint` / `test` / `build` driven by [`.template/repo-settings.yml`](../.template/repo-settings.yml) and [`scripts/run_project_checks.sh`](../scripts/run_project_checks.sh) when `use_project_commands: true`, or explicit commands from the caller when `use_project_commands: false`.
 - **Stack presets** — sensible defaults for Laravel, Next.js, Flutter, and Python when command fields are left empty.
 - **Copy-paste starters** — [`templates/consumer-quickstart/`](../templates/consumer-quickstart/README.md) provides ready-made `ci.yml` + `repo-settings.yml` pairs for common stacks.
-- **Optional extras** — PR automation, labeler, stale workflows (thin callers can point at the same tooling repo); [Lefthook](../lefthook.yml) for optional local hooks (CI remains authoritative).
+- **Optional extras** — PR automation, PR intelligence, labeler, and stale via additional reusable workflows; thin caller examples under [`templates/consumer-quickstart/optional-workflows/`](../templates/consumer-quickstart/optional-workflows/README.md). Config flags default to **on** (`true`). [Lefthook](../lefthook.yml) for optional local hooks (CI remains authoritative).
 - **Documentation** — release policy, linting strategy, naming conventions, and operations guides under this [`docs/`](./) tree.
 
 Root [`CHANGELOG.md`](../CHANGELOG.md) tracks this template and tooling. Each application keeps its own app-level `README.md` and changelog; those are unrelated to wiring central CI.
@@ -68,6 +68,7 @@ An organization owner (or admin) must allow application repositories to call wor
 The published repo (for example **`hao47363/better-dev-ci`**) must include on its **GitHub default branch** (this project uses **`stable`**) at least:
 
 - `.github/workflows/universal-ci.yml`
+- Optional: `universal-pr-automation.yml`, `universal-pr-intelligence.yml`, `universal-stale.yml`, `universal-labeler.yml` (consumers add thin callers)
 - Composite actions under `.github/actions/`
 - Repository root: `scripts/`, `templates/`, `docs/`
 

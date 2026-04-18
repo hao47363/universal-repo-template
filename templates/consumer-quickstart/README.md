@@ -4,10 +4,11 @@ These folders are **examples only**: nothing here runs in the tooling repo. Copy
 
 | Stack | Copy these files into your repo |
 | --- | --- |
-| **Next.js** (npm preset) | [`nextjs/.github/workflows/ci.yml`](nextjs/.github/workflows/ci.yml) → `.github/workflows/ci.yml`<br>[`nextjs/.template/repo-settings.yml`](nextjs/.template/repo-settings.yml) → `.template/repo-settings.yml` |
-| **Laravel** | [`laravel/…`](laravel/) (same layout) |
-| **Flutter** | [`flutter/…`](flutter/) |
-| **Custom** | [`custom/…`](custom/) — you must set non-empty `commands.*` (no stack presets). |
+| **Next.js** (npm preset) | [`nextjs/.github/workflows/ci.yml`](nextjs/.github/workflows/ci.yml) → `.github/workflows/ci.yml`<br>[`nextjs/.template/repo-settings.yml`](nextjs/.template/repo-settings.yml) → `.template/repo-settings.yml` (includes **`governance`**, **`automation`**, **`pr_intelligence`** defaults for optional workflows) |
+| **Laravel** | [`laravel/…`](laravel/) (same layout; `repo-settings.yml` includes optional-workflow defaults) |
+| **Flutter** | [`flutter/…`](flutter/) (same) |
+| **Custom** | [`custom/…`](custom/) — set non-empty `commands.*` (no stack presets); `repo-settings.yml` includes optional-workflow defaults. |
+| **Optional automations** (PR automation, stale, labeler, PR intelligence) | [`optional-workflows/`](optional-workflows/README.md) — copy the YAML files you need into **`.github/workflows/`** in the app repo. |
 
 ## Before you copy
 

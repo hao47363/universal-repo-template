@@ -73,6 +73,9 @@ governance:
 automation:
   # Required: no
   # Default: true
+  labeler_enabled: true
+  # Required: no
+  # Default: true
   auto_pr_enabled: true
   # Required: no
   # Default: main

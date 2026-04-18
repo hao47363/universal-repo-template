@@ -1,0 +1,79 @@
+name: Universal PR labeler (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      tooling_repository:
+        type: string
+        description: Repository that hosts root scripts/ and templates/ when not vendored in the app checkout.
+        default: hao47363/better-dev-ci
+      tooling_ref:
+        type: string
+        description: Git ref on tooling_repository for the governance pack checkout.
+        default: stable
+      tooling_auth_mode:
+        type: string
+        description: pat with GH_CI_REPO_TOKEN for private tooling; none for public.
+        default: none
+    secrets:
+      GH_CI_REPO_TOKEN:
+        description: Optional PAT with read access to tooling_repository when tooling_auth_mode is pat.
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup governance pack
+        uses: hao47363/better-dev-ci/.github/actions/setup-governance-pack@stable
+        with:
+          fetch_depth: "1"
+          tooling_repository: ${{ inputs.tooling_repository }}
+          tooling_ref: ${{ inputs.tooling_ref }}
+          tooling_auth_mode: ${{ inputs.tooling_auth_mode }}
+          tooling_token: ${{ secrets.GH_CI_REPO_TOKEN }}
+
+      - name: Read labeler settings
+        id: cfg
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "enabled=$(sh ./scripts/get_config_value.sh automation.labeler_enabled true)" >> "$GITHUB_OUTPUT"
+          echo "branch_types=$(sh ./scripts/get_config_value.sh governance.branch_types feature,feat,fix,chore,docs,refactor,test,perf,ci,build,style,revert)" >> "$GITHUB_OUTPUT"
+
+      - name: Label by changed files
+        if: ${{ steps.cfg.outputs.enabled == 'true' }}
+        uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Label by branch prefix
+        if: ${{ steps.cfg.outputs.enabled == 'true' }}
+        uses: actions/github-script@v7
+        env:
+          ALLOWED_BRANCH_TYPES: ${{ steps.cfg.outputs.branch_types }}
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            const prefix = branch.split('/')[0];
+            const allowed = new Set(
+              (process.env.ALLOWED_BRANCH_TYPES || '')
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
+            );
+
+            if (!allowed.has(prefix)) return;
+
+            const issue_number = context.payload.pull_request.number;
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              labels: [`type:${prefix}`]
+            });

@@ -154,12 +154,12 @@ Set `runtime_version` to a Flutter SDK version string (for example `3.24.0`) to 
 
 Point `uses:` at the matching file in this repository:
 
-- `universal-pr-automation.yml` — auto-create pull requests on push
-- `universal-pr-intelligence.yml` — PR report and comment
-- `universal-stale.yml` — scheduled stale handling
-- `universal-labeler.yml` — label pull requests
+- `universal-pr-automation.yml` — auto-create pull requests on push (reads **`automation.auto_pr_enabled`**, default `true`)
+- `universal-pr-intelligence.yml` — PR report and comment (reads **`pr_intelligence.enabled`**, default `true`)
+- `universal-stale.yml` — scheduled stale handling (reads **`automation.stale_enabled`**, default `true`)
+- `universal-labeler.yml` — label pull requests (reads **`automation.labeler_enabled`**, default `true`)
 
-Copy the `on:` blocks from thin workflows in the template repository and replace local `uses: ./.github/workflows/...` with `uses: hao47363/better-dev-ci/.github/workflows/...@<ref>` (use your real `owner/repo`).
+Ready-made **thin callers** (triggers in the app repo, one job each) live under [`templates/consumer-quickstart/optional-workflows/`](../templates/consumer-quickstart/optional-workflows/README.md). You can also copy the `on:` blocks from the template repository’s local workflows and replace `uses: ./.github/workflows/...` with `uses: hao47363/better-dev-ci/.github/workflows/...@<ref>` (use your real `owner/repo`).
 
 ## Same-repository layout (`universal-repo-template`)
 

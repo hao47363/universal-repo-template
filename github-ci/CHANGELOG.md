@@ -10,11 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Reusable **`universal-pr-automation.yml`**, **`universal-stale.yml`**, **`universal-labeler.yml`**, and **`universal-pr-intelligence.yml`**, each reading repo-settings flags with **defaults on** (`automation.auto_pr_enabled`, `automation.stale_enabled`, `automation.labeler_enabled`, `pr_intelligence.enabled`), plus thin caller YAML under **`templates/consumer-quickstart/optional-workflows/`**.
+- **`automation.labeler_enabled`** in **`.template/repo-settings.yml`** (default `true`); **`universal-labeler.yml`** skips label steps when set to `false`.
 - `templates/consumer-quickstart/{nextjs,laravel,flutter,custom}/` — copy-paste **`.github/workflows/ci.yml`** + **`.template/repo-settings.yml`** pairs for application repos using default project commands (`use_project_commands: true`).
 - `universal-ci` **Validate tooling inputs** step (non-empty `tooling_repository` / `tooling_ref`, `owner/repo` shape, reject `..` / stray slashes) so misconfiguration fails with a clear message before composite download.
 
 ### Changed
 
+- `templates/consumer-quickstart/{nextjs,laravel,flutter,custom}/.template/repo-settings.yml` now include **`governance`**, **`automation`** (including **`labeler_enabled`**), and **`pr_intelligence`** with the same defaults as the root **`.template/repo-settings.yml`**, plus a short pointer to **`optional-workflows/`**.
 - Documentation: clarify **repository root** vs **`github-ci/`** publishable mirror; expand tooling layout §2, [CI tooling overview](docs/ci-tooling-overview.md), [configuration reference](docs/reference/configuration-reference.md) (`universal-ci` inputs), and documentation maps with consumer quick-start links.
 - Docs and `templates/consumer-quickstart/`: consumer examples pin **`@stable`** / `tooling_ref: stable` as the integration branch; release tags and commit SHAs remain optional for slower upgrades.
 - `tooling_repository` / `tooling_ref` defaults in `universal-ci.yml` and `setup-governance-pack` now use **`hao47363/better-dev-ci`** and **`stable`** (maintainer default; production callers should still pass explicit values matching their published tooling repo and pin).
