@@ -7,6 +7,13 @@ mode="${1:-all}"
 target="${2:-}"
 
 if [ ! -f ".template/repo-settings.yml" ] && [ ! -f "$cfg_file" ]; then
+  if [ "$mode" = "enabled" ]; then
+    case "$target" in
+      lint) echo "true"; exit 0 ;;
+      test) echo "true"; exit 0 ;;
+      build) echo "false"; exit 0 ;;
+    esac
+  fi
   echo "No .template/repo-settings.yml or $cfg_file found, skipping project checks."
   exit 0
 fi

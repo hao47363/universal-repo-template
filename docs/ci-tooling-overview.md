@@ -10,7 +10,7 @@ Template-owned automation lives at repository **root** so centralized GitHub Act
 
 Other root files used by the template include:
 
-- **`README.md`** and **`CHANGELOG.md`** — default overview and release notes (mirrored under `docs/governance-pack-README.md` and `docs/operations/tooling-changelog.md`; `init_project.sh` may replace the root pair with your framework’s files)
+- **`README.md`** and **`CHANGELOG.md`** — overview and release notes for this template and tooling (mirrored under `docs/governance-pack-README.md` and `docs/operations/tooling-changelog.md`). Application repositories keep their own root docs; optional `init_project.sh` is only for [root-safe bootstrap](./operations/bootstrap-flow.md) inside a repo that already has governance files.
 - `.github/` workflows and issue templates
 - `.template/` configuration files
 - `lefthook.yml`

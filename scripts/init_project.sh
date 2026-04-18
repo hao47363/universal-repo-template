@@ -18,7 +18,7 @@ Examples:
   ./scripts/init_project.sh laravel
   ./scripts/init_project.sh nextjs
   ./scripts/init_project.sh flutter
-  ./scripts/init_project.sh python "uv init \"$INIT_TARGET_DIR\""
+  ./scripts/init_project.sh python 'uv init "$INIT_TARGET_DIR"'
 EOF
 }
 
@@ -31,7 +31,7 @@ STACK="$1"
 shift || true
 CUSTOM_CMD="${1:-}"
 
-if [ ! -d ".git" ]; then
+if [ ! -e ".git" ]; then
   echo "Run this script from the repository root (where .git exists)."
   exit 1
 fi
@@ -58,7 +58,7 @@ run_default_init() {
       ;;
     python)
       echo "Python requires a custom init command."
-      echo "Example: ./scripts/init_project.sh python \"uv init \\\"\\$INIT_TARGET_DIR\\\"\""
+      printf '%s\n' 'Example: ./scripts/init_project.sh python '\''uv init "$INIT_TARGET_DIR"'\'''
       exit 1
       ;;
     *)
@@ -71,7 +71,8 @@ run_default_init() {
 
 if [ -n "$CUSTOM_CMD" ]; then
   echo "Running custom init command for $STACK..."
-  sh -c "$CUSTOM_CMD"
+  export INIT_TARGET_DIR
+  env INIT_TARGET_DIR="$INIT_TARGET_DIR" sh -c "$CUSTOM_CMD"
 else
   echo "Running default init command for $STACK..."
   run_default_init

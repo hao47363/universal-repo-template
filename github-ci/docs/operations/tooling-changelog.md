@@ -12,9 +12,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
-- Moved CI and governance assets from `governance-pack/` to repository root: `scripts/`, `templates/`, and `docs/` (governance content). Updated workflows, Lefthook, the `setup-governance-pack` composite action (symlinks `scripts/` and `templates/` from the tooling repo), and the `github-ci/` mirror sync accordingly.
-- **Breaking for published `github-ci` consumers:** repositories that vendored `governance-pack/` must instead vendor root `scripts/` and `templates/` (or rely on the tooling checkout symlinks). Bump your consumer tag (for example `v2`) when you adopt this layout on the default branch.
-
 ### Deprecated
 
 ### Removed
@@ -22,6 +19,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 
 ### Security
+
+## [0.5.0] - 2026-04-18
+
+### Added
+
+- Fail-fast PAT validation in `.github/actions/setup-governance-pack` when `tooling_auth_mode` is `pat` and `tooling_token` is empty.
+- Runtime input validation in `.github/actions/setup-runtime` before Node, PHP, Flutter, or Python setup steps.
+- Multiline-safe `GITHUB_OUTPUT` writes for `cache_path`, `cache_key`, and `cache_restore_keys` in `.github/workflows/universal-ci.yml` and `.github/workflows/ci.yml`.
+
+### Changed
+
+- Moved CI and governance assets from `governance-pack/` to repository root: `scripts/`, `templates/`, and `docs/` (governance content). Updated workflows, Lefthook, the `setup-governance-pack` composite action (symlinks `scripts/` and `templates/` from the tooling repo), and the `github-ci/` mirror sync accordingly.
+- **Breaking for published `github-ci` consumers:** repositories that vendored `governance-pack/` must instead vendor root `scripts/` and `templates/` (or rely on the tooling checkout symlinks). Bump your consumer tag (for example `v2`) when you adopt this layout on the default branch.
+- Tooling checkout now removes existing `scripts/` and `templates/` paths in the workspace before creating symlinks, avoiding nested symlinks when those names already existed as directories.
+- Pinned `actions/setup-node`, `shivammathur/setup-php`, `subosito/flutter-action`, and `actions/setup-python` in `setup-runtime` to explicit commit SHAs (tag equivalents noted in comments).
+- `scripts/get_config_value.sh` exits non-zero with a clear error when `read_repo_settings.sh` or `read_project_config.sh` fails instead of swallowing errors.
+- `scripts/run_project_checks.sh` returns machine-readable `enabled` results for lint, test, and build when neither `.template/repo-settings.yml` nor `.template/project-config.yml` exists.
+- `scripts/validate_pr_title.sh` accepts Title Case words and acronym-style tokens (two or more uppercase letters, optional trailing digits, e.g. `API`) within each slash segment.
+- `scripts/init_project.sh` accepts git worktrees (`.git` as a file), passes `INIT_TARGET_DIR` into custom init commands, and documents Python bootstrap with quoting so the variable is not expanded by the caller shell.
+- `scripts/sync-github-ci-mirror.sh` selects mirror `ROOT`/`DEST` for monorepo versus standalone tooling layouts, syncs or removes `CHANGELOG.md` in the mirror, and prunes stale universal workflow files under `github-ci/.github/workflows/`.
+- `templates/lint/nextjs/eslint.config.mjs` uses `tseslint.config()`, applies type-checked rules to `*.{ts,tsx}` only, and disables type-checked rules for JavaScript file patterns.
+- Workflows invoke `sh ./scripts/run_project_checks.sh` for install, lint, test, and build to avoid relying on the executable bit.
+- Documentation for central CI, README, bootstrap, and naming conventions now reflects `.template/repo-settings.yml` first with `.template/project-config.yml` as a legacy fallback where applicable.
+
+### Fixed
+
+- `scripts/generate_pr_report.sh` verifies the merge base before hotspot `git log` aggregation and uses an empty hotspot counts file when the base revision is not resolvable, so report generation does not abort under `set -e`.
 
 ## [0.4.1] - 2026-04-18
 

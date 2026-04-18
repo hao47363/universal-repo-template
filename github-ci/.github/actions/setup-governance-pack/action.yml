@@ -42,6 +42,18 @@ runs:
           echo "local=false" >> "$GITHUB_OUTPUT"
         fi
 
+    - name: Validate PAT token
+      if: ${{ steps.gov.outputs.local != 'true' && inputs.tooling_auth_mode == 'pat' }}
+      shell: bash
+      env:
+        TOOLING_TOKEN: ${{ inputs.tooling_token }}
+      run: |
+        if [[ -z "${TOOLING_TOKEN}" ]]; then
+          echo "Error: tooling_auth_mode is 'pat' but tooling_token (GH_CI_REPO_TOKEN) is empty." >&2
+          echo "Configure a PAT with read access to the tooling repository and pass secrets.GH_CI_REPO_TOKEN." >&2
+          exit 1
+        fi
+
     - name: Checkout CI tooling repository (public)
       if: ${{ steps.gov.outputs.local != 'true' && inputs.tooling_auth_mode != 'pat' }}
       uses: actions/checkout@v4
@@ -63,5 +75,12 @@ runs:
       if: ${{ steps.gov.outputs.local != 'true' }}
       shell: bash
       run: |
-        ln -sfn "${GITHUB_WORKSPACE}/.github-ci-tooling/scripts" "${GITHUB_WORKSPACE}/scripts"
-        ln -sfn "${GITHUB_WORKSPACE}/.github-ci-tooling/templates" "${GITHUB_WORKSPACE}/templates"
+        set -euo pipefail
+        for dest in scripts templates; do
+          target="${GITHUB_WORKSPACE}/${dest}"
+          if [[ -e "$target" ]] || [[ -L "$target" ]]; then
+            rm -rf "$target"
+          fi
+        done
+        ln -s "${GITHUB_WORKSPACE}/.github-ci-tooling/scripts" "${GITHUB_WORKSPACE}/scripts"
+        ln -s "${GITHUB_WORKSPACE}/.github-ci-tooling/templates" "${GITHUB_WORKSPACE}/templates"

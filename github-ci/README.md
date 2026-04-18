@@ -1,6 +1,6 @@
 # Central CI tooling (`github-ci`)
 
-This directory is a **publishable mirror** of reusable GitHub Actions assets: `universal-*.yml` workflows, `.github/actions/setup-governance-pack/`, `.github/actions/setup-runtime/`, root `scripts/`, `templates/`, and `docs/`. Application repositories delegate CI with a small caller workflow and pull updates from one place.
+This directory is a **publishable mirror** of reusable GitHub Actions assets: `universal-*.yml` workflows, `.github/actions/setup-governance-pack/`, `.github/actions/setup-runtime/`, root `scripts/`, `templates/`, and `docs/`. Application repositories **enable CI on GitHub** by delegating with a small caller workflow (`uses: …/universal-ci.yml@…`); they do not vendor the full template workflow graph. Pull updates from this repository by tag or SHA.
 
 **Canonical edits** live in the `universal-repo-template` monorepo (root `.github/workflows/`, `.github/actions/`, `scripts/`, `templates/`, `docs/`). After changing those, run `./scripts/sync-github-ci-mirror.sh` at the template root, then commit the updated `github-ci/` tree and push to your **`Twiport/github-ci`** (or org equivalent) repository.
 
@@ -38,7 +38,7 @@ After any change to reusable YAML, composite actions, `scripts/`, `templates/`, 
 
 ## Default CI (project config)
 
-Keep `on:` triggers in the application repository; delegate `jobs` to this repository. With **`use_project_commands: true`** (the default), commands come from `.template/project-config.yml` and `scripts/run_project_checks.sh` in the checked-out app (or vendored `scripts/` / `templates/` from this tooling repository).
+Keep `on:` triggers in the application repository; delegate `jobs` to this repository. With **`use_project_commands: true`** (the default), `scripts/run_project_checks.sh` resolves commands using **`.template/repo-settings.yml`** first, then **`.template/project-config.yml`** as a legacy fallback for missing keys, in the checked-out app (or from vendored `scripts/` / `templates/` symlinked from this tooling repository).
 
 ```yaml
 name: CI

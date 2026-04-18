@@ -72,20 +72,13 @@ Docs/Setup Guide
 
 ## Variable naming
 
-Use these defaults across projects unless a language framework enforces a stricter rule:
+Follow **language-native** naming for each stack (and any stricter framework rules). Examples:
 
-- Variables and function parameters: `camelCase`
-- Keep names descriptive and readable (avoid unclear short names like `x`, `tmp1`, `val2`)
-- Constants: `UPPER_SNAKE_CASE`
+- **JavaScript / TypeScript:** `camelCase` for variables and parameters; `UPPER_SNAKE_CASE` for module-level constants is common.
+- **Python:** `snake_case` for variables and functions; `UPPER_SNAKE_CASE` for constants.
+- **Go / Rust / others:** use idiomatic names for that ecosystem (e.g. Go exported identifiers, Rust `snake_case` / `SCREAMING_SNAKE_CASE`).
 
-Examples:
-
-```text
-userProfile
-retryCount
-MAX_RETRY_COUNT
-API_TIMEOUT_MS
-```
+Keep names descriptive and readable (avoid unclear short names like `x`, `tmp1`, `val2`).
 
 ## Declaration style (JS/TS only)
 

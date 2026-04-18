@@ -2,6 +2,8 @@
 
 This template is designed to stay language-agnostic while improving feedback speed and governance quality.
 
+**Consumer model:** application repositories call the **published** reusable workflow (for example `Twiport/github-ci/.github/workflows/universal-ci.yml@v1`). They do **not** copy the full in-repo `ci.yml` graph from this monorepo. See [Centralized CI setup](../central-ci-setup.md), the [Central tooling README](../../README.md), and the root [README](../../README.md) for GitHub organization settings, secrets, and thin caller YAML.
+
 ## Prerequisites
 
 - `lefthook` is the only non-default tool required by this template for local hook checks.

@@ -2,14 +2,24 @@ import js from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
-export default [
+export default tseslint.config(
   {
     ignores: [".next/**", "dist/**", "build/**", "coverage/**", "node_modules/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {
-    files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"],
+    files: ["**/*.{js,mjs,cjs,jsx}"],
+    extends: [tseslint.configs.disableTypeChecked],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+    },
+  },
+  {
+    files: ["**/*.{ts,tsx}"],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -30,5 +40,5 @@ export default [
       "camelcase": ["error", { "properties": "never", "ignoreDestructuring": false }],
       "no-duplicate-imports": "error"
     },
-  },
-];
+  }
+);

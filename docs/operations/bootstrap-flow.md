@@ -1,6 +1,8 @@
 # Bootstrap Flow (Root-Safe Framework Init)
 
-Use this flow when creating a new project from this template and you want framework files at repository root without breaking template governance workflows.
+> **Application teams:** do **not** rely on this flow to “turn on CI.” Wire your service to the central tooling repository with a thin GitHub Actions workflow and `.template/repo-settings.yml` as described in [Centralized CI setup](../central-ci-setup.md), [CI and DevX flow](./ci-devx-flow.md), and the [Central tooling README](../../github-ci/README.md).
+
+Use this flow only when you **intentionally** scaffold framework files inside a repository that already contains governance assets (for example maintainers of this template, or a legacy migration), and you want framework files at repository root without breaking template workflows.
 
 ## Why this exists
 
@@ -36,7 +38,7 @@ sh ./scripts/init_project.sh flutter
 Python (custom command required):
 
 ```bash
-sh ./scripts/init_project.sh python "uv init \"$INIT_TARGET_DIR\""
+sh ./scripts/init_project.sh python 'uv init "$INIT_TARGET_DIR"'
 ```
 
 ## Behavior and safety

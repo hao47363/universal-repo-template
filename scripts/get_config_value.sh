@@ -10,10 +10,17 @@ if [ -z "$key" ]; then
   exit 1
 fi
 
-value="$(sh ./scripts/read_repo_settings.sh "$key" 2>/dev/null || true)"
+value=""
+if ! value="$(sh ./scripts/read_repo_settings.sh "$key")"; then
+  echo "Error: read_repo_settings.sh failed for key: $key" >&2
+  exit 1
+fi
 
 if [ -z "$value" ]; then
-  value="$(sh ./scripts/read_project_config.sh "$key" 2>/dev/null || true)"
+  if ! value="$(sh ./scripts/read_project_config.sh "$key")"; then
+    echo "Error: read_project_config.sh failed for key: $key" >&2
+    exit 1
+  fi
 fi
 
 if [ -z "$value" ]; then

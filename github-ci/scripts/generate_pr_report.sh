@@ -329,9 +329,14 @@ hotspot_level="LOW"
 max_hotspot_count=0
 if [ "$files_changed" -gt 0 ]; then
   hotspot_counts_file="$tmp_dir/hotspot_counts.txt"
-  git log --no-merges --name-only --pretty=format: -n "$hotspot_history_commits" "$base_target" \
-    | awk 'NF { counts[$0]++ } END { for (path in counts) printf "%d\t%s\n", counts[path], path }' \
-    > "$hotspot_counts_file"
+  if git rev-parse --verify "$base_target" >/dev/null 2>&1; then
+    git log --no-merges --name-only --pretty=format: -n "$hotspot_history_commits" "$base_target" \
+      | awk 'NF { counts[$0]++ } END { for (path in counts) printf "%d\t%s\n", counts[path], path }' \
+      > "$hotspot_counts_file" || : > "$hotspot_counts_file"
+  else
+    echo "Skipping hotspot history: unable to resolve base ref: $base_target" >&2
+    : > "$hotspot_counts_file"
+  fi
 
   while IFS= read -r path; do
     [ -z "$path" ] && continue

@@ -2,19 +2,20 @@
 
 > **Mirror:** The same content lives at the repository root in [`README.md`](../README.md) (GitHub’s default view). Update both files together when you change this overview.
 
-A governance-first template system for framework projects that keeps application ownership at root while enforcing consistent engineering standards.
+A governance-first template system for framework projects. **Application repositories do not vendor full CI from this tree.** They enable GitHub Actions by calling the **published central tooling** (for example `Twiport/github-ci`) with a thin workflow and configuration under `.template/`.
 
 <!-- Optional badges (replace when needed)
 [![CI](https://img.shields.io/github/actions/workflow/status/ORG/REPO/ci.yml?branch=main)](#)
-[![Version](https://img.shields.io/badge/version-0.4.0-blue)](../CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.5.0-blue)](../CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](#)
 -->
 
 ## Navigation
 
-- [Quick start](#quick-start)
-- [Setup modes](#setup-modes)
-- [Stack behavior](#stack-behavior)
+- [Set up CI on GitHub](#set-up-ci-on-github)
+- [What application repositories need](#what-application-repositories-need)
+- [Configuration modes](#configuration-modes)
+- [Stack defaults](#stack-defaults)
 - [Who should use this](#who-should-use-this)
 - [When not to use this](#when-not-to-use-this)
 - [Documentation map](#documentation-map)
@@ -24,103 +25,177 @@ A governance-first template system for framework projects that keeps application
 
 ## What this includes
 
-- Branch naming, commit message, and PR title validation
-- Config-driven `install`/`lint`/`test`/`build` execution
-- Optional PR automation, labeler, and stale management workflows
-- Local git hooks with Lefthook
-- Stack-aware command defaults for Laravel, Next.js, Flutter, and Python
-- Structured governance docs, release policy, and quality playbook
+- **Central reusable CI** — `universal-ci.yml`, governance composites (`setup-governance-pack`, optional `setup-runtime`), and shared `scripts/` / `templates/` / `docs/`, published from the [`github-ci/`](../github-ci/) mirror to a tooling repository (for example `Twiport/github-ci`).
+- Branch naming, commit message, and PR title validation (in CI).
+- Config-driven `install` / `lint` / `test` / `build` via `scripts/run_project_checks.sh` when `use_project_commands: true`, or explicit caller commands when `use_project_commands: false`.
+- Optional PR automation, labeler, and stale workflows (reference the tooling repo or copy thin callers as needed).
+- Optional local git hooks with Lefthook (CI remains the source of truth on GitHub).
+- Stack-aware defaults for Laravel, Next.js, Flutter, and Python when using project commands.
+- Structured governance docs, release policy, and quality playbook.
 
-This template ships a **default** root `README.md` and `CHANGELOG.md` so GitHub shows overview and release notes. After you run `init_project.sh`, the scaffold step copies the framework’s `README.md` and `CHANGELOG.md` from the generated project onto the repository root (replacing those files).
+This monorepo’s root `README.md` and `CHANGELOG.md` describe the **template and tooling**. Your application’s own `README.md` / `CHANGELOG.md` live in that service’s repository and are unrelated to central CI wiring.
 
-## At a glance
+## Set up CI on GitHub
 
-- **Framework ownership after init**: once scaffolded, application `README.md` and `CHANGELOG.md` come from your stack generator.
-- **Governance by default**: CI, hooks, and conventions are ready out of the box.
-- **Minimal root coupling**: template assets live at repository root (`scripts/`, `templates/`, `docs/`).
-- **Stack-aware defaults**: Laravel, Next.js, Flutter, and Python supported.
+Follow these steps **for each application repository** that should run central CI. Replace `Twiport/github-ci` with your org and repository name if different.
 
-## Quick start
+### 1. Allow reusable workflows (organization)
 
-1. Create a new repository from this template in GitHub.
-2. Clone it locally.
-3. Initialize your framework safely from template context:
+Someone with **organization owner** (or equivalent admin) access must allow app repos to call the tooling workflows.
 
-```bash
-sh ./scripts/init_project.sh <laravel|nextjs|flutter|python>
+1. On GitHub, open the **organization** that owns your application repositories (not the tooling repo alone).
+2. Go to **Settings** → **Actions** → **General**.
+3. Under **Access**, find **Workflow permissions** / **Fork pull request workflows** / **Actions permissions** as applicable to your plan.
+4. Under **Access to workflows**, choose that repositories in the org may **use workflows from other repositories** (wording varies; on Enterprise Cloud you may set **Allow** for the tooling repository explicitly).
+5. Save. If your org uses **fork-based PRs** from outside collaborators, confirm fork PR policies still match your security model.
+
+### 2. Confirm the tooling repository
+
+The central repo (for example **`Twiport/github-ci`**) must expose reusable workflows on its default branch and carry the mirrored tree: `.github/workflows/universal-ci.yml`, composite actions under `.github/actions/`, and root `scripts/`, `templates/`, `docs/`.
+
+- **Tag a consumer ref** (for example `v1`) after each reviewed release so apps can pin `…/universal-ci.yml@v1` or a **full commit SHA** for immutability.
+- Maintainers of this monorepo refresh that repository from here with [`../scripts/sync-github-ci-mirror.sh`](../scripts/sync-github-ci-mirror.sh), then push and tag on GitHub.
+
+### 3. Enable Actions on the application repository
+
+1. Open the **application** repository on GitHub.
+2. Go to **Settings** → **Actions** → **General**.
+3. Under **Actions permissions**, select **Allow all actions and reusable workflows** (or the least privilege option your policy allows that still permits **reusable workflows** from your tooling repo).
+4. Save.
+
+### 4. Add `ci.yml` under `.github/workflows/`
+
+In the **application** repository (local clone or GitHub web editor), create the workflow file:
+
+**Path:** `.github/workflows/ci.yml`  
+(You may use another name such as `universal-ci.yml`; keep a single entry workflow that only `uses:` the reusable workflow unless you add more jobs yourself.)
+
+**Minimal example (public tooling, default project commands):**
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+permissions:
+  contents: read
+
+jobs:
+  universal-ci:
+    uses: Twiport/github-ci/.github/workflows/universal-ci.yml@v1
+    with:
+      tooling_repository: Twiport/github-ci
+      tooling_ref: v1
+      tooling_auth_mode: none
+    secrets: inherit
 ```
 
-Examples:
+**What each field does:**
 
-```bash
-sh ./scripts/init_project.sh laravel
-sh ./scripts/init_project.sh nextjs
-sh ./scripts/init_project.sh flutter
-sh ./scripts/init_project.sh python "uv init \"$INIT_TARGET_DIR\""
+| Input | Purpose |
+| --- | --- |
+| `uses:` | Calls the published reusable workflow; `@v1` is a tag on the **tooling** repo (pin `@<sha>` for stricter control). |
+| `tooling_repository` | Repository that holds `scripts/` and `templates/` when they are not already in the app checkout (usually the same as the workflow host). |
+| `tooling_ref` | Branch or tag checked out for that tooling repository (must contain the expected files). |
+| `tooling_auth_mode` | `none` when the tooling repo is readable without a PAT; `pat` when it is private (see below). |
+| `secrets: inherit` | Passes repository/organization secrets into the reusable workflow (required when using `GH_CI_REPO_TOKEN`). |
+
+**Private tooling repository** — Create a fine-grained or classic PAT with **Contents: Read** on the tooling repo only. In the application repo, add a secret named **`GH_CI_REPO_TOKEN`**. Then use:
+
+```yaml
+jobs:
+  universal-ci:
+    uses: Twiport/github-ci/.github/workflows/universal-ci.yml@v1
+    with:
+      tooling_repository: Twiport/github-ci
+      tooling_ref: v1
+      tooling_auth_mode: pat
+    secrets: inherit
 ```
 
-4. Set stack and options in `.template/repo-settings.yml`.
-5. Install hooks:
+Commit and push `.github/workflows/ci.yml` to the default branch (or open a PR); the **Actions** tab should show a **CI** run triggered by `push` or `pull_request`.
 
-```bash
-lefthook install
+### 5. Add project configuration in the application repo
+
+With the default **`use_project_commands: true`** (omit `use_project_commands` or set it to `true`), the reusable workflow reads **`.template/repo-settings.yml`** in the application repository (see [Configuration reference](./reference/configuration-reference.md)).
+
+**Minimal example** at `.template/repo-settings.yml`:
+
+```yaml
+project:
+  stack: nextjs
+
+commands:
+  install: ""
+  lint: ""
+  test: ""
+  build: ""
 ```
 
-6. Push a feature branch and open a PR.
+Leave `commands.*` empty to use stack defaults (see [Stack defaults](#stack-defaults)), or set explicit shell commands. Commit this file on the same branch as your workflow so CI sees it on checkout.
 
-## Setup modes
+### 6. Verify
 
-- **Framework-first mode (recommended)**  
-  Use `init_project.sh` to scaffold framework files without breaking governance assets.
+1. Open **Actions** in the application repository and confirm the **CI** workflow appears.
+2. Push a small commit or open a pull request; confirm jobs such as **Prepare**, **Validate naming…**, and **Lint** / **Test** run as expected.
+3. Optional: run `lefthook install` locally for branch/commit checks before push.
 
-- **Custom mode**  
-  Set `project.stack: custom` and define all `commands.*` manually in `.template/repo-settings.yml`.
+**Deeper reference:** [Centralized CI setup](./central-ci-setup.md) · [CI and DevX flow](./operations/ci-devx-flow.md) · [Central tooling README](../github-ci/README.md) · [Configuration reference](./reference/configuration-reference.md)
 
-- **Preset mode**  
-  Set stack to one of `laravel`, `nextjs`, `flutter`, `python` and leave `commands.*` empty to use built-in defaults.
+## What application repositories need
 
-## Stack behavior
+- A workflow file under `.github/workflows/` that **`uses:`** the published `universal-ci.yml` (tag or SHA).
+- **`.template/repo-settings.yml`** when using default project commands (primary config); **`.template/project-config.yml`** is optional legacy fallback for missing keys.
+- **Actions enabled** and, for private tooling, the **`GH_CI_REPO_TOKEN`** secret where required.
 
-- **`laravel`** defaults:
-  - `install`: `composer install`
-  - `lint`: `vendor/bin/pint --test`
-  - `test`: `php artisan test`
-  - `build`: empty
-- **`nextjs`** defaults:
-  - `install`: `npm ci`
-  - `lint`: `npm run lint`
-  - `test`: `npm test`
-  - `build`: `npm run build`
-- **`flutter`** defaults:
-  - `install`: `flutter pub get`
-  - `lint`: `flutter analyze`
-  - `test`: `flutter test`
-  - `build`: `flutter build apk`
-- **`python`** defaults:
-  - `install`: `pip install -r requirements.txt`
-  - `lint`: `ruff check .`
-  - `test`: `pytest -q`
-  - `build`: empty
+They **do not** need to copy this template’s full `.github/workflows/ci.yml` graph into the app repo unless you choose same-repo validation while developing the reusable workflow itself.
 
-Any `commands.*` value you set manually overrides stack defaults.
+## Configuration modes
+
+- **`use_project_commands: true` (default in reusable workflow)**  
+  Commands come from `.template/repo-settings.yml` (then legacy `.template/project-config.yml`) via `scripts/run_project_checks.sh`, using scripts/templates from the app checkout or symlinked from the tooling repo.
+
+- **`use_project_commands: false`**  
+  Pass `install_cmd`, `lint_cmd`, `test_cmd`, `build_cmd`, optional `runtime` / `runtime_version`, and optional `cache_*` inputs from the thin caller. No stack logic is required inside the central YAML.
+
+- **`project.stack: custom`** (project-command mode)  
+  Define all `commands.*` explicitly in `.template/repo-settings.yml`.
+
+## Stack defaults
+
+When `commands.*` are empty and a stack is set, defaults apply:
+
+- **`laravel`**: `composer install` · `vendor/bin/pint --test` · `php artisan test` · build empty
+- **`nextjs`**: `npm ci` · `npm run lint` · `npm test` · `npm run build`
+- **`flutter`**: `flutter pub get` · `flutter analyze` · `flutter test` · `flutter build apk`
+- **`python`**: `pip install -r requirements.txt` · `ruff check .` · `pytest -q` · build empty
+
+Any `commands.*` you set overrides the preset for that step.
 
 ## Who should use this
 
-- Teams that want standardized Git workflow governance across multiple stacks
-- Projects that need repeatable CI + naming + review discipline
-- Repositories where framework/root files should remain owned by the app itself
+- Teams that want **one place to upgrade** CI and governance across many services
+- Organizations that already use (or plan) a **central `github-ci` repository**
+- Repositories where the application owns its own root docs and code layout
 
 ## When not to use this
 
-- Very small throwaway prototypes with no CI/governance needs
-- Repos where full custom workflow logic replaces all template governance
-- Teams that do not want enforced naming/commit/PR conventions
+- Very small prototypes with no shared CI requirement
+- Repositories that must not call external reusable workflows
+- Teams that do not want enforced naming, commit, or PR title rules in CI
 
 ## Documentation map
 
-- [Bootstrap and migration flow](./operations/bootstrap-flow.md)
+- [Centralized CI setup](./central-ci-setup.md)
+- [CI tooling layout (root)](./ci-tooling-overview.md)
+- [Central tooling README (consumer guide)](../github-ci/README.md)
 - [CI and DevX flow](./operations/ci-devx-flow.md)
 - [Configuration reference](./reference/configuration-reference.md)
+- [Bootstrap flow](./operations/bootstrap-flow.md) (optional; template or legacy root-safe init only)
 - [Naming conventions](./governance/naming-conventions.md)
 - [Linting strategy](./governance/linting-strategy.md)
 - [Code quality playbook](./governance/code-quality-playbook.md)
@@ -131,26 +206,30 @@ Any `commands.*` value you set manually overrides stack defaults.
 
 ## Required GitHub settings
 
-- Repository Actions enabled
-- Workflow permissions aligned with enabled automations
-- If using auto PR features, allow Actions to create pull requests
+- Repository **Actions** enabled on every application and on the tooling repository
+- **Reusable workflow access** from app repos to the tooling repo (org setting)
+- Workflow **permissions** aligned with any automations you enable (for example PR comment upserts)
+- If using **private** tooling: **`GH_CI_REPO_TOKEN`** (or equivalent) available to the caller workflow
 
 ## Structure policy
 
-- Keep root minimal and framework-owned where possible
-- Keep GitHub-native files under `.github/`
-- Keep template-owned docs/scripts/templates at repository root (`scripts/`, `templates/`, `docs/`).
+- **Tooling repository (`github-ci`)** — hosts reusable workflows, composites, `scripts/`, `templates/`, `docs/` (mirrored from this template).
+- **Application repositories** — minimal `.github/workflows/` (thin `uses:`), `.template/repo-settings.yml`, and the application source tree; no requirement to duplicate this template’s full workflow set.
 
 ## FAQ
 
-### What happens to the root `README.md` after `init_project.sh`?
+### Do we still run `init_project.sh` for every new service?
 
-`init_project.sh` copies the framework’s `README.md` and `CHANGELOG.md` from the generated project into the repository root, replacing the template defaults so the app becomes the primary documentation.
+**No** for CI. New services wire **GitHub** with a thin caller and config as in [Set up CI on GitHub](#set-up-ci-on-github). `init_project.sh` remains documented for [root-safe framework bootstrap](./operations/bootstrap-flow.md) when you intentionally generate a framework **inside** a repo that already holds governance files (for example maintainers of this template).
 
-### Can I still customize commands?
+### How do we pin CI so merges do not surprise us?
 
-Yes. Set `project.stack` for defaults and override any `commands.*` key as needed.
+Pin `uses: …/universal-ci.yml@<full_commit_sha>` instead of a floating tag, or control updates by moving a `v1` tag only after review. See [Release/versioning policy](./governance/release-versioning.md) and [Central tooling README](../github-ci/README.md).
+
+### Can we still customize install/lint/test/build?
+
+**Yes.** Either override keys in `.template/repo-settings.yml` (project-command mode) or set `use_project_commands: false` and pass shell commands from the caller workflow.
 
 ### Does this support custom stacks?
 
-Yes. Use `project.stack: custom` and define `commands.install`, `commands.lint`, `commands.test`, and `commands.build` explicitly.
+**Yes.** Use `project.stack: custom` with explicit `commands.*`, or explicit-command mode with your own shell strings.

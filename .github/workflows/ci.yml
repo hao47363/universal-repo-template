@@ -47,6 +47,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          gh_multiline() {
+            local k="$1"
+            local v="${2:-}"
+            local d="GHA_${k}_EOF_${RANDOM}"
+            {
+              printf '%s<<%s\n' "$k" "$d"
+              printf '%s\n' "$v"
+              printf '%s\n' "$d"
+            } >> "$GITHUB_OUTPUT"
+          }
           run_lint="$(sh ./scripts/run_project_checks.sh enabled lint)"
           run_test="$(sh ./scripts/run_project_checks.sh enabled test)"
           run_build="$(sh ./scripts/run_project_checks.sh enabled build)"
@@ -59,9 +69,9 @@ jobs:
           echo "run_test=${run_test:-true}" >> "$GITHUB_OUTPUT"
           echo "run_build=${run_build:-false}" >> "$GITHUB_OUTPUT"
           echo "cache_enabled=${cache_enabled:-false}" >> "$GITHUB_OUTPUT"
-          echo "cache_path=${cache_path:-}" >> "$GITHUB_OUTPUT"
-          echo "cache_key=${cache_key:-}" >> "$GITHUB_OUTPUT"
-          echo "cache_restore_keys=${cache_restore_keys:-}" >> "$GITHUB_OUTPUT"
+          gh_multiline "cache_path" "${cache_path:-}"
+          gh_multiline "cache_key" "${cache_key:-}"
+          gh_multiline "cache_restore_keys" "${cache_restore_keys:-}"
 
       - name: Detect code changes
         id: filter
@@ -156,10 +166,10 @@ jobs:
           restore-keys: ${{ needs.prepare.outputs.cache_restore_keys }}
 
       - name: Install
-        run: ./scripts/run_project_checks.sh install
+        run: sh ./scripts/run_project_checks.sh install
 
       - name: Run lint
-        run: ./scripts/run_project_checks.sh lint
+        run: sh ./scripts/run_project_checks.sh lint
 
   test:
     name: Test
@@ -181,10 +191,10 @@ jobs:
           restore-keys: ${{ needs.prepare.outputs.cache_restore_keys }}
 
       - name: Install
-        run: ./scripts/run_project_checks.sh install
+        run: sh ./scripts/run_project_checks.sh install
 
       - name: Run tests
-        run: ./scripts/run_project_checks.sh test
+        run: sh ./scripts/run_project_checks.sh test
 
   build:
     name: Build
@@ -206,8 +216,8 @@ jobs:
           restore-keys: ${{ needs.prepare.outputs.cache_restore_keys }}
 
       - name: Install
-        run: ./scripts/run_project_checks.sh install
+        run: sh ./scripts/run_project_checks.sh install
 
       - name: Run build
-        run: ./scripts/run_project_checks.sh build
+        run: sh ./scripts/run_project_checks.sh build
 
