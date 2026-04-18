@@ -2,11 +2,11 @@
 
 This directory is a **publishable mirror** of reusable GitHub Actions assets: `universal-*.yml` workflows, `.github/actions/setup-governance-pack/`, `.github/actions/setup-runtime/`, root `scripts/`, `templates/`, and `docs/`. Application repositories **enable CI on GitHub** by delegating with a small caller workflow (`uses: …/universal-ci.yml@…`); they do not vendor the full template workflow graph. Pull updates from this repository by tag or SHA.
 
-**Canonical edits** live in the `universal-repo-template` monorepo (root `.github/workflows/`, `.github/actions/`, `scripts/`, `templates/`, `docs/`). After changing those, run `./scripts/sync-github-ci-mirror.sh` at the template root, then commit the updated `github-ci/` tree and push to your **`Twiport/github-ci`** (or org equivalent) repository.
+**Canonical edits** live in the template monorepo at the repository root (`.github/workflows/`, `.github/actions/`, `scripts/`, `templates/`, `docs/`). After changing those, run `./scripts/sync-github-ci-mirror.sh` from that root, then commit the updated `github-ci/` tree and push to your published tooling repository (for example **`example-org/github-ci`**).
 
 ## Publish or refresh the GitHub repository
 
-1. Create or reuse the GitHub repository (for example `Twiport/github-ci`).
+1. Create or reuse the GitHub repository (for example `example-org/github-ci`).
 2. Ensure the default branch root contains `.github/`, `scripts/`, `templates/`, `docs/`, and this `README.md`.
 3. Enable **Actions** on the repository.
 4. Tag a release for consumers, for example: `git tag -a v1 -m "Central CI v1"` and `git push origin v1`.
@@ -54,9 +54,9 @@ permissions:
 
 jobs:
   universal-ci:
-    uses: Twiport/github-ci/.github/workflows/universal-ci.yml@v1
+    uses: example-org/github-ci/.github/workflows/universal-ci.yml@v1
     with:
-      tooling_repository: Twiport/github-ci
+      tooling_repository: example-org/github-ci
       tooling_ref: v1
       tooling_auth_mode: none
     secrets: inherit
@@ -75,10 +75,10 @@ Empty command strings skip that step with a log line (the job still succeeds).
 ```yaml
 jobs:
   ci:
-    uses: Twiport/github-ci/.github/workflows/universal-ci.yml@v1
+    uses: example-org/github-ci/.github/workflows/universal-ci.yml@v1
     with:
       use_project_commands: false
-      tooling_repository: Twiport/github-ci
+      tooling_repository: example-org/github-ci
       tooling_ref: v1
       tooling_auth_mode: none
       runtime: node
@@ -102,10 +102,10 @@ jobs:
 ```yaml
 jobs:
   ci:
-    uses: Twiport/github-ci/.github/workflows/universal-ci.yml@v1
+    uses: example-org/github-ci/.github/workflows/universal-ci.yml@v1
     with:
       use_project_commands: false
-      tooling_repository: Twiport/github-ci
+      tooling_repository: example-org/github-ci
       tooling_ref: v1
       tooling_auth_mode: none
       runtime: php
@@ -125,10 +125,10 @@ jobs:
 ```yaml
 jobs:
   ci:
-    uses: Twiport/github-ci/.github/workflows/universal-ci.yml@v1
+    uses: example-org/github-ci/.github/workflows/universal-ci.yml@v1
     with:
       use_project_commands: false
-      tooling_repository: Twiport/github-ci
+      tooling_repository: example-org/github-ci
       tooling_ref: v1
       tooling_auth_mode: none
       runtime: flutter
@@ -154,7 +154,7 @@ Point `uses:` at the matching file in this repository:
 - `universal-stale.yml` — scheduled stale handling
 - `universal-labeler.yml` — label pull requests
 
-Copy the `on:` blocks from thin workflows in the template repository and replace local `uses: ./.github/workflows/...` with `uses: Twiport/github-ci/.github/workflows/...@<ref>`.
+Copy the `on:` blocks from thin workflows in the template repository and replace local `uses: ./.github/workflows/...` with `uses: example-org/github-ci/.github/workflows/...@<ref>` (use your real `owner/repo`).
 
 ## Same-repository layout (`universal-repo-template`)
 
@@ -165,7 +165,7 @@ jobs:
   universal-ci:
     uses: ./.github/workflows/universal-ci.yml
     with:
-      tooling_repository: Twiport/github-ci
+      tooling_repository: example-org/github-ci
       tooling_ref: v1
       tooling_auth_mode: none
     secrets: inherit

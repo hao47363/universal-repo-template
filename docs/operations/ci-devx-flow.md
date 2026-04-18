@@ -2,7 +2,7 @@
 
 This template is designed to stay language-agnostic while improving feedback speed and governance quality.
 
-**Consumer model:** application repositories call the **published** reusable workflow (for example `Twiport/github-ci/.github/workflows/universal-ci.yml@v1`). They do **not** copy the full in-repo `ci.yml` graph from this monorepo. See [Centralized CI setup](../central-ci-setup.md) and the [Central tooling README](../../github-ci/README.md) for GitHub organization settings, secrets, thin caller YAML, and workflow examples.
+**Consumer model:** application repositories call the **published** reusable workflow (for example `example-org/github-ci/.github/workflows/universal-ci.yml@v1`). They do **not** copy the full in-repo `ci.yml` graph from this monorepo. See [Centralized CI setup](../central-ci-setup.md) and the [Central tooling README](../../github-ci/README.md) for GitHub organization settings, secrets, thin caller YAML, and workflow examples.
 
 ## Prerequisites
 

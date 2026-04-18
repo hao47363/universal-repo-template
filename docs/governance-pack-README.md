@@ -1,76 +1,87 @@
-# Universal Repo Template Docs
+# Better Dev CI
 
-> **Mirror:** The same content lives at the repository root in [`README.md`](../README.md) (GitHub’s default view). Update both files together when you change this overview.
+Centralized **GitHub Actions** workflows, scripts, and governance docs so many application repositories can share one upgrade path. Application repos stay small: a thin caller workflow plus `.template/` configuration. They do **not** copy the full job graph from this repository.
 
-A governance-first template system for framework projects. **Application repositories do not vendor full CI from this tree.** They enable GitHub Actions by calling the **published central tooling** (for example `Twiport/github-ci`) with a thin workflow and configuration under `.template/`.
+> **Mirror:** The same overview lives at the repository root in [`README.md`](../README.md) (GitHub’s default view). Update both files when you change this document.
 
-<!-- Optional badges (replace when needed)
-[![CI](https://img.shields.io/github/actions/workflow/status/ORG/REPO/ci.yml?branch=main)](#)
-[![Version](https://img.shields.io/badge/version-0.5.0-blue)](../CHANGELOG.md)
-[![License](https://img.shields.io/badge/license-MIT-green)](#)
+<!-- Optional badges (replace ORG/REPO and uncomment)
+[![CI](https://img.shields.io/github/actions/workflow/status/ORG/REPO/ci.yml?branch=main)](https://github.com/ORG/REPO/actions)
+[![Changelog](https://img.shields.io/badge/changelog-CHANGELOG-blue)](../CHANGELOG.md)
 -->
 
-## Navigation
+---
 
-- [Set up CI on GitHub](#set-up-ci-on-github)
-- [What application repositories need](#what-application-repositories-need)
-- [Configuration modes](#configuration-modes)
-- [Stack defaults](#stack-defaults)
-- [Who should use this](#who-should-use-this)
-- [When not to use this](#when-not-to-use-this)
-- [Documentation map](#documentation-map)
-- [Required GitHub settings](#required-github-settings)
-- [Structure policy](#structure-policy)
-- [FAQ](#faq)
+## How it works
 
-## What this includes
+| Layer | Role |
+| --- | --- |
+| **This repository** | Source of truth for workflows under `.github/`, composites, `scripts/`, `templates/`, and `docs/`. |
+| **[`github-ci/`](../github-ci/) mirror** | Publishable tree you push to a dedicated tooling repo on GitHub (for example `example-org/github-ci`). |
+| **Each application repo** | Declares `uses: …/universal-ci.yml@<tag-or-sha>` and adds `.template/repo-settings.yml`. |
 
-- **Central reusable CI** — `universal-ci.yml`, governance composites (`setup-governance-pack`, optional `setup-runtime`), and shared `scripts/` / `templates/` / `docs/`, published from the [`github-ci/`](../github-ci/) mirror to a tooling repository (for example `Twiport/github-ci`).
-- Branch naming, commit message, and PR title validation (in CI).
-- Config-driven `install` / `lint` / `test` / `build` via `scripts/run_project_checks.sh` when `use_project_commands: true`, or explicit caller commands when `use_project_commands: false`.
-- Optional PR automation, labeler, and stale workflows (reference the tooling repo or copy thin callers as needed).
-- Optional local git hooks with Lefthook (CI remains the source of truth on GitHub).
-- Stack-aware defaults for Laravel, Next.js, Flutter, and Python when using project commands.
-- Structured governance docs, release policy, and quality playbook.
+Maintainers refresh the published repo from here with [`../scripts/sync-github-ci-mirror.sh`](../scripts/sync-github-ci-mirror.sh), then tag releases (for example `v1`) for consumers to pin.
 
-This monorepo’s root `README.md` and `CHANGELOG.md` describe the **template and tooling**. Your application’s own `README.md` / `CHANGELOG.md` live in that service’s repository and are unrelated to central CI wiring.
+---
+
+## What you get
+
+- **Reusable universal CI** — [`universal-ci.yml`](../github-ci/.github/workflows/universal-ci.yml) plus composites such as `setup-governance-pack` and optional `setup-runtime`.
+- **Governance in CI** — branch names, commit messages, and PR titles validated on GitHub.
+- **Configurable pipelines** — `install` / `lint` / `test` / `build` driven by [`.template/repo-settings.yml`](../.template/repo-settings.yml) and [`scripts/run_project_checks.sh`](../scripts/run_project_checks.sh) when `use_project_commands: true`, or explicit commands from the caller when `use_project_commands: false`.
+- **Stack presets** — sensible defaults for Laravel, Next.js, Flutter, and Python when command fields are left empty.
+- **Optional extras** — PR automation, labeler, stale workflows (thin callers can point at the same tooling repo); [Lefthook](../lefthook.yml) for optional local hooks (CI remains authoritative).
+- **Documentation** — release policy, linting strategy, naming conventions, and operations guides under this [`docs/`](./) tree.
+
+Root [`CHANGELOG.md`](../CHANGELOG.md) tracks this template and tooling. Each application keeps its own app-level `README.md` and changelog; those are unrelated to wiring central CI.
+
+---
+
+## Quick navigation
+
+| I want to… | Start here |
+| --- | --- |
+| Wire a new app repo to central CI | [Set up CI on GitHub](#set-up-ci-on-github) |
+| See workflow inputs and YAML knobs | [Configuration reference](./reference/configuration-reference.md) |
+| Understand org settings and tokens | [Centralized CI setup](./central-ci-setup.md) · [Consumer guide](../github-ci/README.md) |
+| Browse governance and ops docs | [Documentation map](#documentation-map) |
+
+---
 
 ## Set up CI on GitHub
 
-Follow these steps **for each application repository** that should run central CI. Replace `Twiport/github-ci` with your org and repository name if different.
+Use a **placeholder** tooling repo name in the examples below: replace `example-org/github-ci` with your real **owner/repository** on GitHub.
 
-### 1. Allow reusable workflows (organization)
+### 1. Organization: allow reusable workflows
 
-Someone with **organization owner** (or equivalent admin) access must allow app repos to call the tooling workflows.
+An organization owner (or admin) must allow application repositories to call workflows from the tooling repository.
 
-1. On GitHub, open the **organization** that owns your application repositories (not the tooling repo alone).
-2. Go to **Settings** → **Actions** → **General**.
-3. Under **Access**, find **Workflow permissions** / **Fork pull request workflows** / **Actions permissions** as applicable to your plan.
-4. Under **Access to workflows**, choose that repositories in the org may **use workflows from other repositories** (wording varies; on Enterprise Cloud you may set **Allow** for the tooling repository explicitly).
-5. Save. If your org uses **fork-based PRs** from outside collaborators, confirm fork PR policies still match your security model.
+1. Open the **organization** that owns your apps (not only the tooling repo).
+2. **Settings** → **Actions** → **General**.
+3. Under **Access**, adjust **Workflow permissions** / **Actions permissions** as your plan requires.
+4. Under **Access to workflows**, allow member repositories to **use workflows from other repositories** (wording varies; on Enterprise Cloud you can allow the tooling repo explicitly).
+5. Save. If you use fork-based PRs from outside collaborators, confirm policies still match your security model.
 
-### 2. Confirm the tooling repository
+### 2. Tooling repository layout
 
-The central repo (for example **`Twiport/github-ci`**) must expose reusable workflows on its default branch and carry the mirrored tree: `.github/workflows/universal-ci.yml`, composite actions under `.github/actions/`, and root `scripts/`, `templates/`, `docs/`.
+The published repo (for example **`example-org/github-ci`**) must include on its default branch:
 
-- **Tag a consumer ref** (for example `v1`) after each reviewed release so apps can pin `…/universal-ci.yml@v1` or a **full commit SHA** for immutability.
-- Maintainers of this monorepo refresh that repository from here with [`../scripts/sync-github-ci-mirror.sh`](../scripts/sync-github-ci-mirror.sh), then push and tag on GitHub.
+- `.github/workflows/universal-ci.yml`
+- Composite actions under `.github/actions/`
+- Repository root: `scripts/`, `templates/`, `docs/`
 
-### 3. Enable Actions on the application repository
+Tag a consumer reference after each reviewed release (`v1`, or a **full commit SHA** for immutability). Consumers pin `uses: …/universal-ci.yml@v1` or `@<sha>`.
 
-1. Open the **application** repository on GitHub.
-2. Go to **Settings** → **Actions** → **General**.
-3. Under **Actions permissions**, select **Allow all actions and reusable workflows** (or the least privilege option your policy allows that still permits **reusable workflows** from your tooling repo).
-4. Save.
+### 3. Application repository: enable Actions
 
-### 4. Add `ci.yml` under `.github/workflows/`
+1. Open the **application** repo → **Settings** → **Actions** → **General**.
+2. Under **Actions permissions**, choose an option that still allows **reusable workflows** from your tooling repo (often “Allow all actions and reusable workflows” or the least privilege your policy permits).
+3. Save.
 
-In the **application** repository (local clone or GitHub web editor), create the workflow file:
+### 4. Add a caller workflow
 
-**Path:** `.github/workflows/ci.yml`  
-(You may use another name such as `universal-ci.yml`; keep a single entry workflow that only `uses:` the reusable workflow unless you add more jobs yourself.)
+**Path:** `.github/workflows/ci.yml` (another name is fine; keep one job that `uses:` the reusable workflow unless you add more yourself.)
 
-**Minimal example (public tooling, default project commands):**
+**Public tooling, default project commands** (`tooling_auth_mode: none`):
 
 ```yaml
 name: CI
@@ -86,44 +97,44 @@ permissions:
 
 jobs:
   universal-ci:
-    uses: Twiport/github-ci/.github/workflows/universal-ci.yml@v1
+    uses: example-org/github-ci/.github/workflows/universal-ci.yml@v1
     with:
-      tooling_repository: Twiport/github-ci
+      tooling_repository: example-org/github-ci
       tooling_ref: v1
       tooling_auth_mode: none
     secrets: inherit
 ```
 
-**What each field does:**
+**Workflow inputs (summary)**
 
 | Input | Purpose |
 | --- | --- |
-| `uses:` | Calls the published reusable workflow; `@v1` is a tag on the **tooling** repo (pin `@<sha>` for stricter control). |
-| `tooling_repository` | Repository that holds `scripts/` and `templates/` when they are not already in the app checkout (usually the same as the workflow host). |
-| `tooling_ref` | Branch or tag checked out for that tooling repository (must contain the expected files). |
-| `tooling_auth_mode` | `none` when the tooling repo is readable without a PAT; `pat` when it is private (see below). |
-| `secrets: inherit` | Passes repository/organization secrets into the reusable workflow (required when using `GH_CI_REPO_TOKEN`). |
+| `uses:` | Path to the reusable workflow on the **tooling** repo; `@v1` is a tag (use `@<full_sha>` for a fixed revision). |
+| `tooling_repository` | Repo that provides `scripts/` and `templates/` when they are not in the app checkout (usually the same as the workflow host). |
+| `tooling_ref` | Branch or tag to check out for that tooling repo. |
+| `tooling_auth_mode` | `none` if no PAT is needed; `pat` if the tooling repo is private (see below). |
+| `secrets: inherit` | Passes secrets into the reusable workflow (needed when using `GH_CI_REPO_TOKEN`). |
 
-**Private tooling repository** — Create a fine-grained or classic PAT with **Contents: Read** on the tooling repo only. In the application repo, add a secret named **`GH_CI_REPO_TOKEN`**. Then use:
+**Private tooling repo** — Create a PAT with **Contents: Read** scoped to the tooling repo. In the application repo, add secret **`GH_CI_REPO_TOKEN`**, then set:
 
 ```yaml
 jobs:
   universal-ci:
-    uses: Twiport/github-ci/.github/workflows/universal-ci.yml@v1
+    uses: example-org/github-ci/.github/workflows/universal-ci.yml@v1
     with:
-      tooling_repository: Twiport/github-ci
+      tooling_repository: example-org/github-ci
       tooling_ref: v1
       tooling_auth_mode: pat
     secrets: inherit
 ```
 
-Commit and push `.github/workflows/ci.yml` to the default branch (or open a PR); the **Actions** tab should show a **CI** run triggered by `push` or `pull_request`.
+Push to the default branch or open a PR; the **Actions** tab should show a **CI** run.
 
-### 5. Add project configuration in the application repo
+### 5. Project configuration
 
-With the default **`use_project_commands: true`** (omit `use_project_commands` or set it to `true`), the reusable workflow reads **`.template/repo-settings.yml`** in the application repository (see [Configuration reference](./reference/configuration-reference.md)).
+With **`use_project_commands: true`** (the default), the reusable workflow reads **`.template/repo-settings.yml`**. See [Configuration reference](./reference/configuration-reference.md).
 
-**Minimal example** at `.template/repo-settings.yml`:
+Minimal example:
 
 ```yaml
 project:
@@ -136,100 +147,113 @@ commands:
   build: ""
 ```
 
-Leave `commands.*` empty to use stack defaults (see [Stack defaults](#stack-defaults)), or set explicit shell commands. Commit this file on the same branch as your workflow so CI sees it on checkout.
+Empty `commands.*` values use [stack defaults](#stack-defaults). Override any step with your own shell command.
 
 ### 6. Verify
 
-1. Open **Actions** in the application repository and confirm the **CI** workflow appears.
-2. Push a small commit or open a pull request; confirm jobs such as **Prepare**, **Validate naming…**, and **Lint** / **Test** run as expected.
-3. Optional: run `lefthook install` locally for branch/commit checks before push.
+1. **Actions** shows the workflow.
+2. A push or PR runs **Prepare**, governance validation, then **Lint** / **Test** / **Build** as configured.
+3. Optional: run `lefthook install` locally for faster feedback before push.
 
-**Deeper reference:** [Centralized CI setup](./central-ci-setup.md) · [CI and DevX flow](./operations/ci-devx-flow.md) · [Central tooling README](../github-ci/README.md) · [Configuration reference](./reference/configuration-reference.md)
+**More detail:** [Centralized CI setup](./central-ci-setup.md) · [CI and DevX flow](./operations/ci-devx-flow.md) · [Central tooling README](../github-ci/README.md)
+
+---
 
 ## What application repositories need
 
-- A workflow file under `.github/workflows/` that **`uses:`** the published `universal-ci.yml` (tag or SHA).
-- **`.template/repo-settings.yml`** when using default project commands (primary config); **`.template/project-config.yml`** is optional legacy fallback for missing keys.
-- **Actions enabled** and, for private tooling, the **`GH_CI_REPO_TOKEN`** secret where required.
+- One workflow under `.github/workflows/` that **`uses:`** the published `universal-ci.yml` (tag or SHA).
+- **`.template/repo-settings.yml`** for default project-command mode; **`.template/project-config.yml`** is an optional legacy fallback for missing keys.
+- **Actions enabled**, and **`GH_CI_REPO_TOKEN`** when the tooling repo is private.
 
-They **do not** need to copy this template’s full `.github/workflows/ci.yml` graph into the app repo unless you choose same-repo validation while developing the reusable workflow itself.
+They **do not** need to copy this template’s full [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) graph unless you are developing or testing the reusable workflow in the same repo.
+
+---
 
 ## Configuration modes
 
-- **`use_project_commands: true` (default in reusable workflow)**  
-  Commands come from `.template/repo-settings.yml` (then legacy `.template/project-config.yml`) via `scripts/run_project_checks.sh`, using scripts/templates from the app checkout or symlinked from the tooling repo.
+| Mode | Behavior |
+| --- | --- |
+| **`use_project_commands: true`** (default) | Commands from `.template/repo-settings.yml` (then `.template/project-config.yml` for missing keys), executed via `scripts/run_project_checks.sh`. Scripts and templates come from the app tree or from the tooling checkout (symlinked when absent). |
+| **`use_project_commands: false`** | Caller passes `install_cmd`, `lint_cmd`, `test_cmd`, `build_cmd`, optional `runtime` / `runtime_version`, and optional `cache_*` inputs. |
+| **`project.stack: custom`** | With project commands on, define every `commands.*` yourself in `repo-settings.yml`. |
 
-- **`use_project_commands: false`**  
-  Pass `install_cmd`, `lint_cmd`, `test_cmd`, `build_cmd`, optional `runtime` / `runtime_version`, and optional `cache_*` inputs from the thin caller. No stack logic is required inside the central YAML.
-
-- **`project.stack: custom`** (project-command mode)  
-  Define all `commands.*` explicitly in `.template/repo-settings.yml`.
+---
 
 ## Stack defaults
 
-When `commands.*` are empty and a stack is set, defaults apply:
+When `commands.*` are empty and `project.stack` is set:
 
-- **`laravel`**: `composer install` · `vendor/bin/pint --test` · `php artisan test` · build empty
-- **`nextjs`**: `npm ci` · `npm run lint` · `npm test` · `npm run build`
-- **`flutter`**: `flutter pub get` · `flutter analyze` · `flutter test` · `flutter build apk`
-- **`python`**: `pip install -r requirements.txt` · `ruff check .` · `pytest -q` · build empty
+| Stack | install | lint | test | build |
+| --- | --- | --- | --- | --- |
+| **laravel** | `composer install` | `vendor/bin/pint --test` | `php artisan test` | *(none)* |
+| **nextjs** | `npm ci` | `npm run lint` | `npm test` | `npm run build` |
+| **flutter** | `flutter pub get` | `flutter analyze` | `flutter test` | `flutter build apk` |
+| **python** | `pip install -r requirements.txt` | `ruff check .` | `pytest -q` | *(none)* |
 
-Any `commands.*` you set overrides the preset for that step.
+Any non-empty `commands.*` overrides that step only.
 
-## Who should use this
+---
 
-- Teams that want **one place to upgrade** CI and governance across many services
-- Organizations that already use (or plan) a **central `github-ci` repository**
-- Repositories where the application owns its own root docs and code layout
+## Who this is for
 
-## When not to use this
+- Teams that want **one place to change** CI and governance across many services.
+- Organizations using (or planning) a **central tooling repository** on GitHub.
+- Repositories where the application owns its own product docs and layout at the root.
 
-- Very small prototypes with no shared CI requirement
-- Repositories that must not call external reusable workflows
-- Teams that do not want enforced naming, commit, or PR title rules in CI
+## When to skip it
+
+- One-off prototypes with no shared CI.
+- Policies that forbid calling external reusable workflows.
+- Teams that do not want branch, commit, or PR title checks in CI.
+
+---
 
 ## Documentation map
 
-- [Centralized CI setup](./central-ci-setup.md)
-- [CI tooling layout (root)](./ci-tooling-overview.md)
-- [Central tooling README (consumer guide)](../github-ci/README.md)
-- [CI and DevX flow](./operations/ci-devx-flow.md)
-- [Configuration reference](./reference/configuration-reference.md)
-- [Bootstrap flow](./operations/bootstrap-flow.md) (optional; template or legacy root-safe init only)
-- [Naming conventions](./governance/naming-conventions.md)
-- [Linting strategy](./governance/linting-strategy.md)
-- [Code quality playbook](./governance/code-quality-playbook.md)
-- [Changelog guidelines](./governance/changelog-guidelines.md)
-- [Release/versioning policy](./governance/release-versioning.md)
-- [Community best-practice report](./governance/community-best-practices-report.md)
-- [Template changelog](../CHANGELOG.md)
+| Topic | Document |
+| --- | --- |
+| Org settings, pinning, tokens | [Centralized CI setup](./central-ci-setup.md) |
+| Layout of `scripts/` and `templates/` | [CI tooling overview](./ci-tooling-overview.md) |
+| Consumer-focused workflow examples | [Central tooling README](../github-ci/README.md) |
+| Day-to-day CI and developer experience | [CI and DevX flow](./operations/ci-devx-flow.md) |
+| All config keys | [Configuration reference](./reference/configuration-reference.md) |
+| Optional framework bootstrap | [Bootstrap flow](./operations/bootstrap-flow.md) |
+| Naming, linting, quality, releases | [Naming conventions](./governance/naming-conventions.md) · [Linting strategy](./governance/linting-strategy.md) · [Code quality playbook](./governance/code-quality-playbook.md) · [Changelog guidelines](./governance/changelog-guidelines.md) · [Release/versioning](./governance/release-versioning.md) |
+| Community notes | [Best-practice report](./governance/community-best-practices-report.md) |
+| Template release notes | [CHANGELOG.md](../CHANGELOG.md) |
 
-## Required GitHub settings
+---
 
-- Repository **Actions** enabled on every application and on the tooling repository
-- **Reusable workflow access** from app repos to the tooling repo (org setting)
-- Workflow **permissions** aligned with any automations you enable (for example PR comment upserts)
-- If using **private** tooling: **`GH_CI_REPO_TOKEN`** (or equivalent) available to the caller workflow
+## Required GitHub settings (checklist)
 
-## Structure policy
+- **Actions** enabled on the tooling repo and on every application repo.
+- **Reusable workflow access** from app repos to the tooling repo (organization setting).
+- **Workflow permissions** sufficient for any optional automations (for example PR comments).
+- **`GH_CI_REPO_TOKEN`** (or equivalent) when using `tooling_auth_mode: pat`.
 
-- **Tooling repository (`github-ci`)** — hosts reusable workflows, composites, `scripts/`, `templates/`, `docs/` (mirrored from this template).
-- **Application repositories** — minimal `.github/workflows/` (thin `uses:`), `.template/repo-settings.yml`, and the application source tree; no requirement to duplicate this template’s full workflow set.
+---
+
+## Repository roles
+
+- **Tooling repository** — hosts reusable workflows, composites, `scripts/`, `templates/`, `docs/` (mirrored from `github-ci/` here).
+- **Application repositories** — thin `uses:` workflow, `.template/repo-settings.yml`, and your product code; no obligation to duplicate the full template workflow set.
+
+---
 
 ## FAQ
 
-### Do we still run `init_project.sh` for every new service?
+### Do we run `init_project.sh` for every new service?
 
-**No** for CI. New services wire **GitHub** with a thin caller and config as in [Set up CI on GitHub](#set-up-ci-on-github). `init_project.sh` remains documented for [root-safe framework bootstrap](./operations/bootstrap-flow.md) when you intentionally generate a framework **inside** a repo that already holds governance files (for example maintainers of this template).
+**Not for CI.** New services connect GitHub with the thin caller and config above. [`init_project.sh`](../scripts/init_project.sh) is for optional [root-safe bootstrap](./operations/bootstrap-flow.md) when you generate a framework inside a repo that already contains governance files (typically template maintainers).
 
-### How do we pin CI so merges do not surprise us?
+### How do we pin CI so upgrades are deliberate?
 
-Pin `uses: …/universal-ci.yml@<full_commit_sha>` instead of a floating tag, or control updates by moving a `v1` tag only after review. See [Release/versioning policy](./governance/release-versioning.md) and [Central tooling README](../github-ci/README.md).
+Pin `uses: …/universal-ci.yml@<full_commit_sha>`, or move a floating tag like `v1` only after review. See [Release/versioning](./governance/release-versioning.md) and [github-ci/README.md](../github-ci/README.md).
 
-### Can we still customize install/lint/test/build?
+### Can we customize install, lint, test, and build?
 
-**Yes.** Either override keys in `.template/repo-settings.yml` (project-command mode) or set `use_project_commands: false` and pass shell commands from the caller workflow.
+**Yes.** Override keys in `.template/repo-settings.yml`, or set `use_project_commands: false` and pass shell commands from the caller workflow.
 
-### Does this support custom stacks?
+### What about custom stacks?
 
 **Yes.** Use `project.stack: custom` with explicit `commands.*`, or explicit-command mode with your own shell strings.

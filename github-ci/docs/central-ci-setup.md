@@ -8,12 +8,12 @@ The **setup-governance-pack** composite action:
 
 1. Checks out the **calling** (application) repository.
 2. Uses **vendored** root `scripts/` and `templates/` when `scripts/run_project_checks.sh` is already present.
-3. Otherwise checks out the central tooling repository (default `Twiport/github-ci`), then symlinks `scripts/` and `templates/` from that checkout into the workspace.
+3. Otherwise checks out the central tooling repository named by the `tooling_repository` input (for example `example-org/github-ci`), then symlinks `scripts/` and `templates/` from that checkout into the workspace.
 
 ## Where the “single update” lives
 
 - **In this monorepo** — Edit `universal-*.yml`, the composite action, or root `scripts/`, `templates/`, and `docs/`, then run `./scripts/sync-github-ci-mirror.sh` to refresh the publishable mirror in [`github-ci/`](../github-ci/).
-- **On GitHub** — Push the `github-ci/` mirror to the `Twiport/github-ci` repository (or your org’s equivalent) and tag releases (`v1`, …). Application repositories pin `uses: …/universal-ci.yml@v1`.
+- **On GitHub** — Push the `github-ci/` mirror to your tooling repository (for example `example-org/github-ci`) and tag releases (`v1`, …). Application repositories pin `uses: …/universal-ci.yml@v1`.
 
 Full operational steps, org settings, secrets, versioning, and consumer YAML snippets are documented in the [Central tooling README](../README.md).
 
@@ -22,7 +22,7 @@ Full operational steps, org settings, secrets, versioning, and consumer YAML sni
 | Repository layout | `uses:` line |
 | --- | --- |
 | Same repo as the reusable files (this template) | `./.github/workflows/universal-ci.yml` (same commit as the caller; best for PR validation) |
-| Minimal app repo with only thin workflows | `Twiport/github-ci/.github/workflows/universal-ci.yml@v1` (or a commit SHA) |
+| Minimal app repo with only thin workflows | `example-org/github-ci/.github/workflows/universal-ci.yml@v1` (or a commit SHA) |
 
 ## Explicit commands (language-agnostic)
 
@@ -46,10 +46,10 @@ permissions:
 
 jobs:
   ci:
-    uses: Twiport/github-ci/.github/workflows/universal-ci.yml@v1
+    uses: example-org/github-ci/.github/workflows/universal-ci.yml@v1
     with:
       use_project_commands: false
-      tooling_repository: Twiport/github-ci
+      tooling_repository: example-org/github-ci
       tooling_ref: v1
       tooling_auth_mode: none
       runtime: node
