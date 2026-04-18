@@ -1,15 +1,15 @@
 type:docs:
   - changed-files:
-      - any-glob-to-any-file: ["**/*.md", "governance-pack/docs/**"]
+      - any-glob-to-any-file: ["**/*.md", "README.md", "CHANGELOG.md", "docs/governance/**", "docs/operations/**", "docs/reference/**"]
 
 area:ci:
   - changed-files:
-      - any-glob-to-any-file: [".github/workflows/**", "governance-pack/scripts/**", "lefthook.yml"]
+      - any-glob-to-any-file: [".github/workflows/**", "scripts/**", "lefthook.yml"]
 
 area:template:
   - changed-files:
-      - any-glob-to-any-file: [".template/**", "governance-pack/docs/README.md"]
+      - any-glob-to-any-file: [".template/**", "docs/governance-pack-README.md"]
 
 area:governance:
   - changed-files:
-      - any-glob-to-any-file: [".github/CODEOWNERS", ".github/pull_request_template.md", "governance-pack/docs/governance/**"]
+      - any-glob-to-any-file: [".github/CODEOWNERS", ".github/pull_request_template.md", "docs/governance/**"]

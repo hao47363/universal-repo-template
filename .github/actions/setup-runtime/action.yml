@@ -1,0 +1,47 @@
+name: Setup runtime
+description: >-
+  Optional language runtimes for CI jobs. Steps are guarded by runtime input;
+  use runtime "none" (default) to skip all setup.
+inputs:
+  runtime:
+    description: 'One of none, node, php, flutter, python.'
+    required: false
+    default: none
+  runtime_version:
+    description: Optional version string for the selected runtime (empty uses a sensible default).
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      if: ${{ inputs.runtime == 'node' }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.runtime_version != '' && inputs.runtime_version || 'lts/*' }}
+
+    - name: Setup PHP
+      if: ${{ inputs.runtime == 'php' }}
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ inputs.runtime_version != '' && inputs.runtime_version || '8.2' }}
+
+    - name: Setup Flutter (pinned)
+      if: ${{ inputs.runtime == 'flutter' && inputs.runtime_version != '' }}
+      uses: subosito/flutter-action@v2
+      with:
+        channel: stable
+        flutter-version: ${{ inputs.runtime_version }}
+
+    - name: Setup Flutter (latest stable)
+      if: ${{ inputs.runtime == 'flutter' && inputs.runtime_version == '' }}
+      uses: subosito/flutter-action@v2
+      with:
+        channel: stable
+
+    - name: Setup Python
+      if: ${{ inputs.runtime == 'python' }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.runtime_version != '' && inputs.runtime_version || '3.12' }}

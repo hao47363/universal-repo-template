@@ -1,0 +1,421 @@
+name: Universal CI (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      tooling_repository:
+        type: string
+        description: Repository that hosts root scripts/templates when the app repo does not vendor them.
+        default: Twiport/github-ci
+      tooling_ref:
+        type: string
+        description: Git ref (tag or branch) for the tooling repository checkout.
+        default: v1
+      tooling_auth_mode:
+        type: string
+        description: pat to pass GH_CI_REPO_TOKEN for private tooling; none for public tooling checkouts.
+        default: none
+      use_project_commands:
+        type: boolean
+        description: When true (default), install/lint/test/build run via ./scripts/run_project_checks.sh and project config. When false, use the explicit *_cmd inputs and run_* / cache inputs below.
+        default: true
+      run_lint:
+        type: boolean
+        description: When use_project_commands is false, whether the lint job is enabled (subject to path filters).
+        default: true
+      run_test:
+        type: boolean
+        description: When use_project_commands is false, whether the test job is enabled (subject to path filters).
+        default: true
+      run_build:
+        type: boolean
+        description: When use_project_commands is false, whether the build job is enabled (subject to path filters).
+        default: false
+      install_cmd:
+        type: string
+        description: Shell command for install (explicit mode). Empty skips the install step in that job.
+        default: ""
+      lint_cmd:
+        type: string
+        description: Shell command for lint (explicit mode). Empty skips the lint command step.
+        default: ""
+      test_cmd:
+        type: string
+        description: Shell command for tests (explicit mode). Empty skips the test command step.
+        default: ""
+      build_cmd:
+        type: string
+        description: Shell command for build (explicit mode). Empty skips the build command step.
+        default: ""
+      cache_enabled:
+        type: boolean
+        description: When use_project_commands is false, enable actions/cache restore in heavy jobs.
+        default: false
+      cache_path:
+        type: string
+        description: Cache path(s) for explicit mode (same format as actions/cache path).
+        default: ""
+      cache_key:
+        type: string
+        description: Cache key for explicit mode.
+        default: ""
+      cache_restore_keys:
+        type: string
+        description: Optional restore-keys for explicit mode (newline-separated list supported by actions/cache).
+        default: ""
+      runtime:
+        type: string
+        description: Optional runtime to set up before commands (none, node, php, flutter, python).
+        default: none
+      runtime_version:
+        type: string
+        description: Optional version for the selected runtime (interpretation depends on runtime; empty uses action defaults).
+        default: ""
+    secrets:
+      GH_CI_REPO_TOKEN:
+        description: Optional PAT with read access to tooling_repository when tooling_auth_mode is pat.
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: universal-ci-${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    name: Prepare config and change filters
+    runs-on: ubuntu-latest
+    outputs:
+      run_lint: ${{ steps.cfg.outputs.run_lint }}
+      run_test: ${{ steps.cfg.outputs.run_test }}
+      run_build: ${{ steps.cfg.outputs.run_build }}
+      cache_enabled: ${{ steps.cfg.outputs.cache_enabled }}
+      cache_path: ${{ steps.cfg.outputs.cache_path }}
+      cache_key: ${{ steps.cfg.outputs.cache_key }}
+      cache_restore_keys: ${{ steps.cfg.outputs.cache_restore_keys }}
+      run_heavy_checks: ${{ steps.filter.outputs.run_heavy_checks }}
+    steps:
+      - name: Setup governance pack
+        uses: ./.github/actions/setup-governance-pack
+        with:
+          fetch_depth: "0"
+          tooling_repository: ${{ inputs.tooling_repository }}
+          tooling_ref: ${{ inputs.tooling_ref }}
+          tooling_auth_mode: ${{ inputs.tooling_auth_mode }}
+          tooling_token: ${{ secrets.GH_CI_REPO_TOKEN }}
+
+      - name: Read project config
+        id: cfg
+        shell: bash
+        env:
+          USE_PROJECT_COMMANDS: ${{ inputs.use_project_commands }}
+          IN_RUN_LINT: ${{ inputs.run_lint }}
+          IN_RUN_TEST: ${{ inputs.run_test }}
+          IN_RUN_BUILD: ${{ inputs.run_build }}
+          IN_CACHE_ENABLED: ${{ inputs.cache_enabled }}
+          IN_CACHE_PATH: ${{ inputs.cache_path }}
+          IN_CACHE_KEY: ${{ inputs.cache_key }}
+          IN_CACHE_RESTORE_KEYS: ${{ inputs.cache_restore_keys }}
+        run: |
+          set -euo pipefail
+          if [[ "${USE_PROJECT_COMMANDS}" == "true" ]]; then
+            run_lint="$(sh ./scripts/run_project_checks.sh enabled lint)"
+            run_test="$(sh ./scripts/run_project_checks.sh enabled test)"
+            run_build="$(sh ./scripts/run_project_checks.sh enabled build)"
+            cache_enabled="$(sh ./scripts/get_config_value.sh cache.enabled false || true)"
+            cache_path="$(sh ./scripts/get_config_value.sh cache.path "" || true)"
+            cache_key="$(sh ./scripts/get_config_value.sh cache.key "" || true)"
+            cache_restore_keys="$(sh ./scripts/get_config_value.sh cache.restore_keys "" || true)"
+          else
+            run_lint="${IN_RUN_LINT}"
+            run_test="${IN_RUN_TEST}"
+            run_build="${IN_RUN_BUILD}"
+            cache_enabled="${IN_CACHE_ENABLED}"
+            cache_path="${IN_CACHE_PATH}"
+            cache_key="${IN_CACHE_KEY}"
+            cache_restore_keys="${IN_CACHE_RESTORE_KEYS}"
+          fi
+          echo "run_lint=${run_lint:-true}" >> "$GITHUB_OUTPUT"
+          echo "run_test=${run_test:-true}" >> "$GITHUB_OUTPUT"
+          echo "run_build=${run_build:-false}" >> "$GITHUB_OUTPUT"
+          echo "cache_enabled=${cache_enabled:-false}" >> "$GITHUB_OUTPUT"
+          echo "cache_path=${cache_path:-}" >> "$GITHUB_OUTPUT"
+          echo "cache_key=${cache_key:-}" >> "$GITHUB_OUTPUT"
+          echo "cache_restore_keys=${cache_restore_keys:-}" >> "$GITHUB_OUTPUT"
+
+      - name: Detect code changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            run_heavy_checks:
+              - '**'
+              - '!**/*.md'
+              - '!docs/governance/**'
+              - '!docs/operations/**'
+              - '!docs/reference/**'
+              - '!.github/*.md'
+              - '!.github/ISSUE_TEMPLATE/**'
+              - '!.github/pull_request_template.md'
+
+  validate-governance:
+    name: Validate naming and commit/PR conventions
+    runs-on: ubuntu-latest
+    needs: prepare
+    steps:
+      - name: Setup governance pack
+        uses: ./.github/actions/setup-governance-pack
+        with:
+          fetch_depth: "0"
+          tooling_repository: ${{ inputs.tooling_repository }}
+          tooling_ref: ${{ inputs.tooling_ref }}
+          tooling_auth_mode: ${{ inputs.tooling_auth_mode }}
+          tooling_token: ${{ secrets.GH_CI_REPO_TOKEN }}
+
+      - name: Validate branch name
+        env:
+          BRANCH_NAME: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+        run: sh ./scripts/validate_branch_name.sh "$BRANCH_NAME"
+
+      - name: Validate commit messages
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            EXEMPT_BRANCHES="$(sh ./scripts/get_config_value.sh governance.exempt_branches "main,develop,staging,dev" | tr -d ' ')"
+            if [[ ",${EXEMPT_BRANCHES}," == *",${{ github.ref_name }},"* ]]; then
+              echo "Skipping commit validation on exempt branch: ${{ github.ref_name }}"
+              exit 0
+            fi
+          fi
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            RANGE="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          else
+            DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+            git fetch --no-tags origin "$DEFAULT_BRANCH":"refs/remotes/origin/$DEFAULT_BRANCH"
+            MERGE_BASE="$(git merge-base "refs/remotes/origin/$DEFAULT_BRANCH" "${{ github.sha }}" || true)"
+            if [[ -z "$MERGE_BASE" || "$MERGE_BASE" == "${{ github.sha }}" ]]; then
+              echo "Using HEAD commit validation (merge-base unavailable or equal to HEAD)."
+              RANGE="${{ github.sha }}"
+            else
+              RANGE="$MERGE_BASE..${{ github.sha }}"
+            fi
+          fi
+          COMMITS=$(git rev-list "$RANGE")
+          if [[ -z "$COMMITS" ]]; then
+            echo "No commits to validate in range: $RANGE"
+            exit 0
+          fi
+          for commit in $COMMITS; do
+            msg="$(git log --format=%s -n 1 "$commit")"
+            f="$(mktemp)"
+            printf '%s\n' "$msg" > "$f"
+            sh ./scripts/validate_commit_msg.sh "$f"
+            rm -f "$f"
+          done
+
+      - name: Validate PR title
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: sh ./scripts/validate_pr_title.sh "$PR_TITLE"
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - validate-governance
+    if: ${{ needs.prepare.outputs.run_lint == 'true' && needs.prepare.outputs.run_heavy_checks == 'true' }}
+    steps:
+      - name: Setup governance pack
+        uses: ./.github/actions/setup-governance-pack
+        with:
+          fetch_depth: "1"
+          tooling_repository: ${{ inputs.tooling_repository }}
+          tooling_ref: ${{ inputs.tooling_ref }}
+          tooling_auth_mode: ${{ inputs.tooling_auth_mode }}
+          tooling_token: ${{ secrets.GH_CI_REPO_TOKEN }}
+
+      - name: Setup runtime
+        if: ${{ inputs.runtime != 'none' }}
+        uses: ./.github/actions/setup-runtime
+        with:
+          runtime: ${{ inputs.runtime }}
+          runtime_version: ${{ inputs.runtime_version }}
+
+      - name: Restore dependency cache (optional)
+        if: ${{ needs.prepare.outputs.cache_enabled == 'true' && needs.prepare.outputs.cache_path != '' && needs.prepare.outputs.cache_key != '' }}
+        uses: actions/cache@v4
+        with:
+          path: ${{ needs.prepare.outputs.cache_path }}
+          key: ${{ needs.prepare.outputs.cache_key }}
+          restore-keys: ${{ needs.prepare.outputs.cache_restore_keys }}
+
+      - name: Install (project config)
+        if: ${{ inputs.use_project_commands == true }}
+        run: ./scripts/run_project_checks.sh install
+
+      - name: Install (explicit commands)
+        if: ${{ inputs.use_project_commands == false }}
+        env:
+          INSTALL_CMD: ${{ inputs.install_cmd }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${INSTALL_CMD}" ]]; then
+            echo "Skipping install (install_cmd is empty)."
+            exit 0
+          fi
+          bash -eo pipefail -c "$INSTALL_CMD"
+
+      - name: Run lint (project config)
+        if: ${{ inputs.use_project_commands == true }}
+        run: ./scripts/run_project_checks.sh lint
+
+      - name: Run lint (explicit commands)
+        if: ${{ inputs.use_project_commands == false }}
+        env:
+          LINT_CMD: ${{ inputs.lint_cmd }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${LINT_CMD}" ]]; then
+            echo "Skipping lint (lint_cmd is empty)."
+            exit 0
+          fi
+          bash -eo pipefail -c "$LINT_CMD"
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - validate-governance
+    if: ${{ needs.prepare.outputs.run_test == 'true' && needs.prepare.outputs.run_heavy_checks == 'true' }}
+    steps:
+      - name: Setup governance pack
+        uses: ./.github/actions/setup-governance-pack
+        with:
+          fetch_depth: "1"
+          tooling_repository: ${{ inputs.tooling_repository }}
+          tooling_ref: ${{ inputs.tooling_ref }}
+          tooling_auth_mode: ${{ inputs.tooling_auth_mode }}
+          tooling_token: ${{ secrets.GH_CI_REPO_TOKEN }}
+
+      - name: Setup runtime
+        if: ${{ inputs.runtime != 'none' }}
+        uses: ./.github/actions/setup-runtime
+        with:
+          runtime: ${{ inputs.runtime }}
+          runtime_version: ${{ inputs.runtime_version }}
+
+      - name: Restore dependency cache (optional)
+        if: ${{ needs.prepare.outputs.cache_enabled == 'true' && needs.prepare.outputs.cache_path != '' && needs.prepare.outputs.cache_key != '' }}
+        uses: actions/cache@v4
+        with:
+          path: ${{ needs.prepare.outputs.cache_path }}
+          key: ${{ needs.prepare.outputs.cache_key }}
+          restore-keys: ${{ needs.prepare.outputs.cache_restore_keys }}
+
+      - name: Install (project config)
+        if: ${{ inputs.use_project_commands == true }}
+        run: ./scripts/run_project_checks.sh install
+
+      - name: Install (explicit commands)
+        if: ${{ inputs.use_project_commands == false }}
+        env:
+          INSTALL_CMD: ${{ inputs.install_cmd }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${INSTALL_CMD}" ]]; then
+            echo "Skipping install (install_cmd is empty)."
+            exit 0
+          fi
+          bash -eo pipefail -c "$INSTALL_CMD"
+
+      - name: Run tests (project config)
+        if: ${{ inputs.use_project_commands == true }}
+        run: ./scripts/run_project_checks.sh test
+
+      - name: Run tests (explicit commands)
+        if: ${{ inputs.use_project_commands == false }}
+        env:
+          TEST_CMD: ${{ inputs.test_cmd }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${TEST_CMD}" ]]; then
+            echo "Skipping tests (test_cmd is empty)."
+            exit 0
+          fi
+          bash -eo pipefail -c "$TEST_CMD"
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs:
+      - prepare
+      - validate-governance
+    if: ${{ needs.prepare.outputs.run_build == 'true' && needs.prepare.outputs.run_heavy_checks == 'true' }}
+    steps:
+      - name: Setup governance pack
+        uses: ./.github/actions/setup-governance-pack
+        with:
+          fetch_depth: "1"
+          tooling_repository: ${{ inputs.tooling_repository }}
+          tooling_ref: ${{ inputs.tooling_ref }}
+          tooling_auth_mode: ${{ inputs.tooling_auth_mode }}
+          tooling_token: ${{ secrets.GH_CI_REPO_TOKEN }}
+
+      - name: Setup runtime
+        if: ${{ inputs.runtime != 'none' }}
+        uses: ./.github/actions/setup-runtime
+        with:
+          runtime: ${{ inputs.runtime }}
+          runtime_version: ${{ inputs.runtime_version }}
+
+      - name: Restore dependency cache (optional)
+        if: ${{ needs.prepare.outputs.cache_enabled == 'true' && needs.prepare.outputs.cache_path != '' && needs.prepare.outputs.cache_key != '' }}
+        uses: actions/cache@v4
+        with:
+          path: ${{ needs.prepare.outputs.cache_path }}
+          key: ${{ needs.prepare.outputs.cache_key }}
+          restore-keys: ${{ needs.prepare.outputs.cache_restore_keys }}
+
+      - name: Install (project config)
+        if: ${{ inputs.use_project_commands == true }}
+        run: ./scripts/run_project_checks.sh install
+
+      - name: Install (explicit commands)
+        if: ${{ inputs.use_project_commands == false }}
+        env:
+          INSTALL_CMD: ${{ inputs.install_cmd }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${INSTALL_CMD}" ]]; then
+            echo "Skipping install (install_cmd is empty)."
+            exit 0
+          fi
+          bash -eo pipefail -c "$INSTALL_CMD"
+
+      - name: Run build (project config)
+        if: ${{ inputs.use_project_commands == true }}
+        run: ./scripts/run_project_checks.sh build
+
+      - name: Run build (explicit commands)
+        if: ${{ inputs.use_project_commands == false }}
+        env:
+          BUILD_CMD: ${{ inputs.build_cmd }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${BUILD_CMD}" ]]; then
+            echo "Skipping build (build_cmd is empty)."
+            exit 0
+          fi
+          bash -eo pipefail -c "$BUILD_CMD"

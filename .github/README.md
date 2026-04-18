@@ -14,6 +14,6 @@ Included capabilities:
 
 For full documentation and setup details, see:
 
-- [`governance-pack/docs/README.md`](../governance-pack/docs/README.md)
+- [`README.md`](../README.md) (overview; mirrored under [`docs/governance-pack-README.md`](../docs/governance-pack-README.md))
 
 Once your framework creates a root `README.md`, GitHub will prioritize that README automatically.

@@ -6,7 +6,9 @@ on:
       - "**"
     paths-ignore:
       - "**/*.md"
-      - "governance-pack/docs/**"
+      - "docs/governance/**"
+      - "docs/operations/**"
+      - "docs/reference/**"
       - ".github/*.md"
       - ".github/ISSUE_TEMPLATE/**"
       - ".github/pull_request_template.md"
@@ -45,13 +47,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          run_lint="$(sh ./governance-pack/scripts/run_project_checks.sh enabled lint)"
-          run_test="$(sh ./governance-pack/scripts/run_project_checks.sh enabled test)"
-          run_build="$(sh ./governance-pack/scripts/run_project_checks.sh enabled build)"
-          cache_enabled="$(sh ./governance-pack/scripts/get_config_value.sh cache.enabled false || true)"
-          cache_path="$(sh ./governance-pack/scripts/get_config_value.sh cache.path "" || true)"
-          cache_key="$(sh ./governance-pack/scripts/get_config_value.sh cache.key "" || true)"
-          cache_restore_keys="$(sh ./governance-pack/scripts/get_config_value.sh cache.restore_keys "" || true)"
+          run_lint="$(sh ./scripts/run_project_checks.sh enabled lint)"
+          run_test="$(sh ./scripts/run_project_checks.sh enabled test)"
+          run_build="$(sh ./scripts/run_project_checks.sh enabled build)"
+          cache_enabled="$(sh ./scripts/get_config_value.sh cache.enabled false || true)"
+          cache_path="$(sh ./scripts/get_config_value.sh cache.path "" || true)"
+          cache_key="$(sh ./scripts/get_config_value.sh cache.key "" || true)"
+          cache_restore_keys="$(sh ./scripts/get_config_value.sh cache.restore_keys "" || true)"
 
           echo "run_lint=${run_lint:-true}" >> "$GITHUB_OUTPUT"
           echo "run_test=${run_test:-true}" >> "$GITHUB_OUTPUT"
@@ -69,7 +71,9 @@ jobs:
             run_heavy_checks:
               - '**'
               - '!**/*.md'
-              - '!governance-pack/docs/**'
+              - '!docs/governance/**'
+              - '!docs/operations/**'
+              - '!docs/reference/**'
               - '!.github/*.md'
               - '!.github/ISSUE_TEMPLATE/**'
               - '!.github/pull_request_template.md'
@@ -87,14 +91,14 @@ jobs:
       - name: Validate branch name
         env:
           BRANCH_NAME: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
-        run: sh ./governance-pack/scripts/validate_branch_name.sh "$BRANCH_NAME"
+        run: sh ./scripts/validate_branch_name.sh "$BRANCH_NAME"
 
       - name: Validate commit messages
         shell: bash
         run: |
           set -euo pipefail
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            EXEMPT_BRANCHES="$(sh ./governance-pack/scripts/get_config_value.sh governance.exempt_branches "main,develop,staging,dev" | tr -d ' ')"
+            EXEMPT_BRANCHES="$(sh ./scripts/get_config_value.sh governance.exempt_branches "main,develop,staging,dev" | tr -d ' ')"
             if [[ ",${EXEMPT_BRANCHES}," == *",${{ github.ref_name }},"* ]]; then
               echo "Skipping commit validation on exempt branch: ${{ github.ref_name }}"
               exit 0
@@ -122,7 +126,7 @@ jobs:
             msg="$(git log --format=%s -n 1 "$commit")"
             f="$(mktemp)"
             printf '%s\n' "$msg" > "$f"
-            sh ./governance-pack/scripts/validate_commit_msg.sh "$f"
+            sh ./scripts/validate_commit_msg.sh "$f"
             rm -f "$f"
           done
 
@@ -130,7 +134,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
-        run: sh ./governance-pack/scripts/validate_pr_title.sh "$PR_TITLE"
+        run: sh ./scripts/validate_pr_title.sh "$PR_TITLE"
 
   lint:
     name: Lint
@@ -152,10 +156,10 @@ jobs:
           restore-keys: ${{ needs.prepare.outputs.cache_restore_keys }}
 
       - name: Install
-        run: ./governance-pack/scripts/run_project_checks.sh install
+        run: ./scripts/run_project_checks.sh install
 
       - name: Run lint
-        run: ./governance-pack/scripts/run_project_checks.sh lint
+        run: ./scripts/run_project_checks.sh lint
 
   test:
     name: Test
@@ -177,10 +181,10 @@ jobs:
           restore-keys: ${{ needs.prepare.outputs.cache_restore_keys }}
 
       - name: Install
-        run: ./governance-pack/scripts/run_project_checks.sh install
+        run: ./scripts/run_project_checks.sh install
 
       - name: Run tests
-        run: ./governance-pack/scripts/run_project_checks.sh test
+        run: ./scripts/run_project_checks.sh test
 
   build:
     name: Build
@@ -202,8 +206,8 @@ jobs:
           restore-keys: ${{ needs.prepare.outputs.cache_restore_keys }}
 
       - name: Install
-        run: ./governance-pack/scripts/run_project_checks.sh install
+        run: ./scripts/run_project_checks.sh install
 
       - name: Run build
-        run: ./governance-pack/scripts/run_project_checks.sh build
+        run: ./scripts/run_project_checks.sh build
 

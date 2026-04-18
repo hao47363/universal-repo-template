@@ -34,7 +34,7 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_BASE_REF: ${{ github.base_ref }}
-        run: sh ./governance-pack/scripts/generate_pr_report.sh pr-report.md
+        run: sh ./scripts/generate_pr_report.sh pr-report.md
 
       - name: Upload PR report artifact
         uses: actions/upload-artifact@v4

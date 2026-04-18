@@ -1,0 +1,67 @@
+name: Setup governance pack
+description: >-
+  Checks out the calling repository, then uses vendored root scripts/ and templates/ when present
+  or checks out the CI tooling repository and symlinks those directories into the workspace.
+inputs:
+  fetch_depth:
+    description: Git fetch depth for the application checkout (use 0 for full history).
+    required: false
+    default: "1"
+  tooling_repository:
+    description: Repository that contains scripts/ and templates/ when they are not vendored in the app.
+    required: false
+    default: Twiport/github-ci
+  tooling_ref:
+    description: Git ref (branch or tag) for the tooling repository checkout.
+    required: false
+    default: v1
+  tooling_auth_mode:
+    description: Use pat with tooling_token for private tooling repositories; use none for public tooling.
+    required: false
+    default: none
+  tooling_token:
+    description: PAT with read access to tooling_repository (required when tooling_auth_mode is pat).
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout application
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: ${{ inputs.fetch_depth }}
+
+    - name: Detect local CI scripts
+      id: gov
+      shell: bash
+      run: |
+        if [[ -f scripts/run_project_checks.sh ]]; then
+          echo "local=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "local=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Checkout CI tooling repository (public)
+      if: ${{ steps.gov.outputs.local != 'true' && inputs.tooling_auth_mode != 'pat' }}
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.tooling_repository }}
+        ref: ${{ inputs.tooling_ref }}
+        path: .github-ci-tooling
+
+    - name: Checkout CI tooling repository (private PAT)
+      if: ${{ steps.gov.outputs.local != 'true' && inputs.tooling_auth_mode == 'pat' }}
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.tooling_repository }}
+        ref: ${{ inputs.tooling_ref }}
+        path: .github-ci-tooling
+        token: ${{ inputs.tooling_token }}
+
+    - name: Link scripts and templates from tooling
+      if: ${{ steps.gov.outputs.local != 'true' }}
+      shell: bash
+      run: |
+        ln -sfn "${GITHUB_WORKSPACE}/.github-ci-tooling/scripts" "${GITHUB_WORKSPACE}/scripts"
+        ln -sfn "${GITHUB_WORKSPACE}/.github-ci-tooling/templates" "${GITHUB_WORKSPACE}/templates"

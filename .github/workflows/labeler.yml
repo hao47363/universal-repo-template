@@ -21,7 +21,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "branch_types=$(sh ./governance-pack/scripts/get_config_value.sh governance.branch_types feature,feat,fix,chore,docs,refactor,test,perf,ci,build,style,revert)" >> "$GITHUB_OUTPUT"
+          echo "branch_types=$(sh ./scripts/get_config_value.sh governance.branch_types feature,feat,fix,chore,docs,refactor,test,perf,ci,build,style,revert)" >> "$GITHUB_OUTPUT"
 
       - name: Label by changed files
         uses: actions/labeler@v5
