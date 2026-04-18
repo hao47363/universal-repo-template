@@ -17,6 +17,7 @@ hotspot_threshold="$(read_cfg "pr_intelligence.hotspot_threshold" "6")"
 ignore_patterns="$(read_cfg "pr_intelligence.ignore_patterns" "")"
 
 # pr_intelligence.* numeric knobs must be non-negative integers for git -n and shell arithmetic.
+# Normalize to decimal without leading zeros so $((...)) never treats values as octal (e.g. 08).
 validate_uint_cfg() {
   _name="$1"
   _val="$2"
@@ -28,10 +29,10 @@ validate_uint_cfg() {
         exit 1
       fi
       echo "Warning: ${_name} must be a non-negative integer; got '${_val}'. Using ${_default}." >&2
-      echo "$_default"
+      printf '%d\n' "$((10#${_default}))"
       ;;
     *)
-      printf '%s\n' "$_val"
+      printf '%d\n' "$((10#${_val}))"
       ;;
   esac
 }
@@ -189,12 +190,37 @@ files_changed="$(wc -l < "$meaningful_paths_file" | tr -d ' ')"
 lines_added=0
 lines_deleted=0
 
-exec 3<"$numstat_file"
-while IFS= read -r -d '' record <&3; do
-  [ -z "$record" ] && continue
-  added="$(printf '%s\n' "$record" | cut -f1)"
-  deleted="$(printf '%s\n' "$record" | cut -f2)"
-  rest="$(printf '%s\n' "$record" | cut -f3-)"
+# git --numstat -z can split one logical row across NULs (e.g. "N\tM\t" NUL "path...").
+# Normalize to one TAB-separated line per record for downstream parsing (requires perl).
+numstat_norm_file="$tmp_dir/numstat.norm.txt"
+: > "$numstat_norm_file"
+if [ -s "$numstat_file" ] && command -v perl >/dev/null 2>&1; then
+  perl -0777 -e '
+    undef $/;
+    $_ = <STDIN>;
+    my @t = split(/\0/, $_, -1);
+    pop @t while @t && $t[-1] eq "";
+    my $i = 0;
+    while ($i < @t) {
+      my $r = $t[$i++];
+      my @f = split(/\t/, $r, -1);
+      my ($a, $d) = ($f[0], $f[1]);
+      my $rest = $f[2] // "";
+      if ($rest eq "" && $i < @t) { $rest = $t[$i++]; }
+      while ($i < @t && index($t[$i], "\t") == -1) { $rest = $t[$i++]; }
+      print join("\t", $a, $d, $rest), "\n";
+    }
+  ' <"$numstat_file" >"$numstat_norm_file" 2>/dev/null || true
+fi
+if [ ! -s "$numstat_norm_file" ]; then
+  git diff --numstat -M --diff-filter=ACDMRTUXB "$range" >"$numstat_norm_file" 2>/dev/null || : >"$numstat_norm_file"
+fi
+
+while IFS= read -r line; do
+  [ -z "$line" ] && continue
+  added="$(printf '%s\n' "$line" | cut -f1)"
+  deleted="$(printf '%s\n' "$line" | cut -f2)"
+  rest="$(printf '%s\n' "$line" | cut -f3-)"
   file_path="$(extract_path_from_numstat_tail "$rest")"
   [ -z "$file_path" ] && continue
   if is_ignored_file "$file_path"; then
@@ -208,10 +234,9 @@ while IFS= read -r -d '' record <&3; do
     ''|*[!0-9]*) deleted=0 ;;
   esac
 
-  lines_added=$((lines_added + added))
-  lines_deleted=$((lines_deleted + deleted))
-done
-exec 3<&-
+  lines_added=$((lines_added + 10#${added}))
+  lines_deleted=$((lines_deleted + 10#${deleted}))
+done <"$numstat_norm_file"
 
 line_churn=$((lines_added + lines_deleted))
 

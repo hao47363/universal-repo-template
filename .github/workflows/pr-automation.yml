@@ -81,6 +81,10 @@ jobs:
               owner,
               repo,
               issue_number: createdPr.number,
-              body: '@coderabbitai full review'
+              body: [
+                '@coderabbitai full review',
+                '',
+                'Please include a **Mermaid sequence diagram** in your review that illustrates the main control or data flow relevant to this pull request (for example: contributor → GitHub → Actions jobs → artifacts/bots, or service call order where the change touches runtime behavior).',
+              ].join('\n'),
             });
 

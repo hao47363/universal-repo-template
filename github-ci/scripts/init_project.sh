@@ -45,6 +45,15 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+case "$STACK" in
+  laravel|nextjs|flutter|python) ;;
+  *)
+    echo "Unsupported stack: $STACK"
+    echo "Supported: laravel | nextjs | flutter | python"
+    exit 1
+    ;;
+esac
+
 run_default_init() {
   case "$STACK" in
     laravel)
@@ -68,6 +77,8 @@ run_default_init() {
       ;;
   esac
 }
+
+# STACK is already validated above; this branch only dispatches init.
 
 if [ -n "$CUSTOM_CMD" ]; then
   echo "Running custom init command for $STACK..."
