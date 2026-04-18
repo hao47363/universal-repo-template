@@ -5,7 +5,7 @@ Template-owned automation lives at repository **root** so centralized GitHub Act
 ## Contents
 
 - **`scripts/`**: validation, config helpers, project checks, PR report generation, and `sync-github-ci-mirror.sh`
-- **`templates/`**: optional starter templates (lint presets, etc.)
+- **`templates/`**: starter assets — [`lint/`](../templates/lint/) presets (ESLint, Pint, Flutter, Python) and [`consumer-quickstart/`](../templates/consumer-quickstart/README.md) copy-paste **caller workflow + `repo-settings.yml`** pairs for application repos
 - **`docs/`**: governance playbooks, operations guides, and `central-ci-setup.md`
 
 Other root files used by the template include:

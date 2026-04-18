@@ -7,6 +7,20 @@ The template now uses a centralized config file:
 
 When both files define the same key, `.template/repo-settings.yml` takes precedence.
 
+## GitHub Actions: `universal-ci.yml` (workflow inputs)
+
+Application repositories call the reusable workflow with `workflow_call` inputs defined in [`.github/workflows/universal-ci.yml`](../../.github/workflows/universal-ci.yml). Common fields:
+
+| Input | Purpose |
+| --- | --- |
+| `tooling_repository` | `owner/repo` that hosts `.github/actions/*` and (unless vendored in the app) root `scripts/` and `templates/` — almost always the **same** repo as in the `uses:` URL. |
+| `tooling_ref` | Branch, tag, or SHA on that repo for composites and script checkouts; **must match** the ref on `uses: …/universal-ci.yml@…`. Defaults to **`stable`** in this template. |
+| `tooling_auth_mode` | `none` or `pat` (requires `GH_CI_REPO_TOKEN` on the caller). |
+| `use_project_commands` | Default `true`: run [`scripts/run_project_checks.sh`](../../scripts/run_project_checks.sh) using `.template/repo-settings.yml`. Set `false` to supply `install_cmd`, `lint_cmd`, `test_cmd`, `build_cmd`, and related flags. |
+| `runtime` / `runtime_version` | Optional environment before commands: `none`, `node`, `php`, `flutter`, `python`. |
+
+The **Prepare** job’s first step validates `tooling_repository` and `tooling_ref` (non-empty, `owner/repo` shape, rejects path traversal). For YAML examples and private-tooling PAT setup, see the [Central tooling README](../../github-ci/README.md).
+
 ## Field reference
 
 ### `project.stack`

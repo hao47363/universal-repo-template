@@ -65,13 +65,15 @@ An organization owner (or admin) must allow application repositories to call wor
 
 ### 2. Tooling repository layout
 
-The published repo (for example **`hao47363/better-dev-ci`**) must include on its default branch (this project uses **`stable`**):
+The published repo (for example **`hao47363/better-dev-ci`**) must include on its **GitHub default branch** (this project uses **`stable`**) at least:
 
 - `.github/workflows/universal-ci.yml`
 - Composite actions under `.github/actions/`
 - Repository root: `scripts/`, `templates/`, `docs/`
 
-After each reviewed change on the tooling repo, consumers pick up updates when they pin the **`stable`** branch on both `uses:` and `tooling_ref`. For immutability, pin a **release tag** or **full commit SHA** instead.
+**In this monorepo**, edit the canonical paths at the repository root, run [`scripts/sync-github-ci-mirror.sh`](scripts/sync-github-ci-mirror.sh), then commit and push the updated **`github-ci/`** tree to that tooling remote so consumers see the same files.
+
+**Cross-repo callers** that pin `uses: …@stable` and `tooling_ref: stable` always resolve composites and script checkouts to the **tip of `stable`**. Pin a **tag** or **full commit SHA** instead when you want upgrades to be explicit.
 
 ### 3. Application repository: enable Actions
 
@@ -234,6 +236,7 @@ Any non-empty `commands.*` overrides that step only.
 | --- | --- |
 | Org settings, pinning, tokens | [Centralized CI setup](docs/central-ci-setup.md) |
 | Layout of `scripts/` and `templates/` | [CI tooling overview](docs/ci-tooling-overview.md) |
+| Copy-paste `ci.yml` + `repo-settings.yml` pairs | [`templates/consumer-quickstart/README.md`](templates/consumer-quickstart/README.md) |
 | Consumer-focused workflow examples | [Central tooling README](github-ci/README.md) |
 | Day-to-day CI and developer experience | [CI and DevX flow](docs/operations/ci-devx-flow.md) |
 | All config keys | [Configuration reference](docs/reference/configuration-reference.md) |
@@ -255,7 +258,7 @@ Any non-empty `commands.*` overrides that step only.
 
 ## Repository roles
 
-- **Tooling repository** — hosts reusable workflows, composites, `scripts/`, `templates/`, `docs/` (mirrored from `github-ci/` here).
+- **Tooling repository** — on GitHub, hosts reusable workflows, composites, `scripts/`, `templates/`, and `docs/`. **In this monorepo** those assets are authored at the **repository root**; the **`github-ci/`** directory is a **publishable mirror** produced by [`scripts/sync-github-ci-mirror.sh`](scripts/sync-github-ci-mirror.sh) (not a second source of truth).
 - **Application repositories** — thin `uses:` workflow, `.template/repo-settings.yml`, and your product code; no obligation to duplicate the full template workflow set.
 
 ---

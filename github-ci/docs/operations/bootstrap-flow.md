@@ -56,3 +56,4 @@ sh ./scripts/init_project.sh python 'uv init "$INIT_TARGET_DIR"'
 1. Review generated files and adjust `.template/repo-settings.yml`.
 2. Run `lefthook install`.
 3. Run install/lint/test/build commands for your stack.
+4. When you are ready for GitHub CI, add a thin caller workflow and config as in [Centralized CI setup](../central-ci-setup.md) or copy a pair from [`templates/consumer-quickstart/`](../templates/consumer-quickstart/README.md).
