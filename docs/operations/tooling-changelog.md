@@ -20,6 +20,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Security
 
+## [0.5.1] - 2026-04-18
+
+### Fixed
+
+- Cross-repo `universal-ci` callers: GitHub resolves `uses: ./.github/actions/…` against the **caller** workspace, so jobs failed when the application repository did not contain `setup-governance-pack` / `setup-runtime`. Each job now checks out `inputs.tooling_repository` @ `inputs.tooling_ref` into `.gha-better-dev-ci-pack/` (with `github.token` or `GH_CI_REPO_TOKEN` when `tooling_auth_mode` is `pat`), then loads those composites from `./.gha-better-dev-ci-pack/.github/actions/…`.
+- `setup-governance-pack`: set `clean: false` on the application checkout so a preloaded `.gha-better-dev-ci-pack/` tree is not removed by `git clean` before `scripts/` and `templates/` symlinks are created.
+
+### Changed
+
+- README and governance-facing Markdown: clearer onboarding, neutral `example-org/github-ci` examples, and mirrored copies kept in sync (`docs/governance-pack-README.md`, `docs/central-ci-setup.md`, `docs/operations/ci-devx-flow.md`, `github-ci/README.md`).
+
 ## [0.5.0] - 2026-04-18
 
 ### Added

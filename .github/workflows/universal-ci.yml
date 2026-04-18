@@ -97,8 +97,18 @@ jobs:
       cache_restore_keys: ${{ steps.cfg.outputs.cache_restore_keys }}
       run_heavy_checks: ${{ steps.filter.outputs.run_heavy_checks }}
     steps:
+      # Cross-repo reusable workflows resolve `uses: ./…` against the caller workspace; clone tooling first so
+      # composite actions load from a fixed path (`.gha-better-dev-ci-pack/`).
+      - name: Checkout CI tooling (for composite actions)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.tooling_repository }}
+          ref: ${{ inputs.tooling_ref }}
+          token: ${{ inputs.tooling_auth_mode == 'pat' && secrets.GH_CI_REPO_TOKEN || github.token }}
+          path: .gha-better-dev-ci-pack
+
       - name: Setup governance pack
-        uses: ./.github/actions/setup-governance-pack
+        uses: ./.gha-better-dev-ci-pack/.github/actions/setup-governance-pack
         with:
           fetch_depth: "0"
           tooling_repository: ${{ inputs.tooling_repository }}
@@ -175,8 +185,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: prepare
     steps:
+      - name: Checkout CI tooling (for composite actions)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.tooling_repository }}
+          ref: ${{ inputs.tooling_ref }}
+          token: ${{ inputs.tooling_auth_mode == 'pat' && secrets.GH_CI_REPO_TOKEN || github.token }}
+          path: .gha-better-dev-ci-pack
+
       - name: Setup governance pack
-        uses: ./.github/actions/setup-governance-pack
+        uses: ./.gha-better-dev-ci-pack/.github/actions/setup-governance-pack
         with:
           fetch_depth: "0"
           tooling_repository: ${{ inputs.tooling_repository }}
@@ -240,8 +258,16 @@ jobs:
       - validate-governance
     if: ${{ needs.prepare.outputs.run_lint == 'true' && needs.prepare.outputs.run_heavy_checks == 'true' }}
     steps:
+      - name: Checkout CI tooling (for composite actions)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.tooling_repository }}
+          ref: ${{ inputs.tooling_ref }}
+          token: ${{ inputs.tooling_auth_mode == 'pat' && secrets.GH_CI_REPO_TOKEN || github.token }}
+          path: .gha-better-dev-ci-pack
+
       - name: Setup governance pack
-        uses: ./.github/actions/setup-governance-pack
+        uses: ./.gha-better-dev-ci-pack/.github/actions/setup-governance-pack
         with:
           fetch_depth: "1"
           tooling_repository: ${{ inputs.tooling_repository }}
@@ -251,7 +277,7 @@ jobs:
 
       - name: Setup runtime
         if: ${{ inputs.runtime != 'none' }}
-        uses: ./.github/actions/setup-runtime
+        uses: ./.gha-better-dev-ci-pack/.github/actions/setup-runtime
         with:
           runtime: ${{ inputs.runtime }}
           runtime_version: ${{ inputs.runtime_version }}
@@ -306,8 +332,16 @@ jobs:
       - validate-governance
     if: ${{ needs.prepare.outputs.run_test == 'true' && needs.prepare.outputs.run_heavy_checks == 'true' }}
     steps:
+      - name: Checkout CI tooling (for composite actions)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.tooling_repository }}
+          ref: ${{ inputs.tooling_ref }}
+          token: ${{ inputs.tooling_auth_mode == 'pat' && secrets.GH_CI_REPO_TOKEN || github.token }}
+          path: .gha-better-dev-ci-pack
+
       - name: Setup governance pack
-        uses: ./.github/actions/setup-governance-pack
+        uses: ./.gha-better-dev-ci-pack/.github/actions/setup-governance-pack
         with:
           fetch_depth: "1"
           tooling_repository: ${{ inputs.tooling_repository }}
@@ -317,7 +351,7 @@ jobs:
 
       - name: Setup runtime
         if: ${{ inputs.runtime != 'none' }}
-        uses: ./.github/actions/setup-runtime
+        uses: ./.gha-better-dev-ci-pack/.github/actions/setup-runtime
         with:
           runtime: ${{ inputs.runtime }}
           runtime_version: ${{ inputs.runtime_version }}
@@ -372,8 +406,16 @@ jobs:
       - validate-governance
     if: ${{ needs.prepare.outputs.run_build == 'true' && needs.prepare.outputs.run_heavy_checks == 'true' }}
     steps:
+      - name: Checkout CI tooling (for composite actions)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.tooling_repository }}
+          ref: ${{ inputs.tooling_ref }}
+          token: ${{ inputs.tooling_auth_mode == 'pat' && secrets.GH_CI_REPO_TOKEN || github.token }}
+          path: .gha-better-dev-ci-pack
+
       - name: Setup governance pack
-        uses: ./.github/actions/setup-governance-pack
+        uses: ./.gha-better-dev-ci-pack/.github/actions/setup-governance-pack
         with:
           fetch_depth: "1"
           tooling_repository: ${{ inputs.tooling_repository }}
@@ -383,7 +425,7 @@ jobs:
 
       - name: Setup runtime
         if: ${{ inputs.runtime != 'none' }}
-        uses: ./.github/actions/setup-runtime
+        uses: ./.gha-better-dev-ci-pack/.github/actions/setup-runtime
         with:
           runtime: ${{ inputs.runtime }}
           runtime_version: ${{ inputs.runtime_version }}

@@ -31,6 +31,8 @@ runs:
       uses: actions/checkout@v4
       with:
         fetch-depth: ${{ inputs.fetch_depth }}
+        # Preserve sibling checkouts (e.g. universal-ci preloads composites under .gha-better-dev-ci-pack/).
+        clean: false
 
     - name: Detect local CI scripts
       id: gov
