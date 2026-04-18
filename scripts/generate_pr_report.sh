@@ -88,13 +88,13 @@ if ! git rev-parse --verify "$head_sha" >/dev/null 2>&1; then
   range="$base_target...$head_sha"
 fi
 
-if ! git diff --name-status -M --diff-filter=ACDMRTUXB "$range" > "$name_status_file" 2>/dev/null; then
+if ! git diff --name-status -z -M --diff-filter=ACDMRTUXB "$range" > "$name_status_file" 2>/dev/null; then
   echo "Unable to generate name-status diff for range: $range" >&2
   [ "$strict_mode" = "true" ] && exit 1
   : > "$name_status_file"
 fi
 
-if ! git diff --numstat -M --diff-filter=ACDMRTUXB "$range" > "$numstat_file" 2>/dev/null; then
+if ! git diff --numstat -z -M --diff-filter=ACDMRTUXB "$range" > "$numstat_file" 2>/dev/null; then
   echo "Unable to generate numstat diff for range: $range" >&2
   [ "$strict_mode" = "true" ] && exit 1
   : > "$numstat_file"
@@ -131,22 +131,9 @@ is_ignored_file() {
   return 1
 }
 
-extract_path_from_name_status() {
-  line="$1"
-  status="$(printf '%s\n' "$line" | awk '{print $1}')"
-  case "$status" in
-    R*|C*)
-      printf '%s\n' "$line" | awk '{print $NF}'
-      ;;
-    *)
-      printf '%s\n' "$line" | awk '{print $2}'
-      ;;
-  esac
-}
-
-extract_path_from_numstat() {
-  line="$1"
-  path_field="$(printf '%s\n' "$line" | awk '{ $1=""; $2=""; sub(/^  */, ""); print }')"
+# numstat record is NUL-terminated: added<TAB>deleted<TAB>path tail (tabs inside path preserved via cut -f3-).
+extract_path_from_numstat_tail() {
+  path_field="$1"
   case "$path_field" in
     *" => "*)
       printf '%s\n' "${path_field##* => }"
@@ -169,22 +156,32 @@ rename_count=0
 delete_count=0
 files_changed_all=0
 
-while IFS= read -r line; do
-  [ -z "$line" ] && continue
+# --name-status -z: status<NUL>path<NUL> or status<NUL>old<NUL>new<NUL> for renames/copies.
+exec 3<"$name_status_file"
+while IFS= read -r -d '' status <&3; do
+  [ -z "$status" ] && continue
+  case "$status" in
+    R*|C*)
+      IFS= read -r -d '' _old_path <&3 || break
+      IFS= read -r -d '' path <&3 || break
+      ;;
+    *)
+      IFS= read -r -d '' path <&3 || break
+      ;;
+  esac
   files_changed_all=$((files_changed_all + 1))
-  status="$(printf '%s\n' "$line" | awk '{print $1}')"
   case "$status" in
     R*) rename_count=$((rename_count + 1)) ;;
     D) delete_count=$((delete_count + 1)) ;;
   esac
 
-  path="$(extract_path_from_name_status "$line")"
   [ -z "$path" ] && continue
   if is_ignored_file "$path"; then
     continue
   fi
   printf '%s\n' "$path" >> "$meaningful_paths_file"
-done < "$name_status_file"
+done
+exec 3<&-
 
 sort -u "$meaningful_paths_file" -o "$meaningful_paths_file"
 
@@ -192,11 +189,13 @@ files_changed="$(wc -l < "$meaningful_paths_file" | tr -d ' ')"
 lines_added=0
 lines_deleted=0
 
-while IFS= read -r line; do
-  [ -z "$line" ] && continue
-  added="$(printf '%s\n' "$line" | awk '{print $1}')"
-  deleted="$(printf '%s\n' "$line" | awk '{print $2}')"
-  file_path="$(extract_path_from_numstat "$line")"
+exec 3<"$numstat_file"
+while IFS= read -r -d '' record <&3; do
+  [ -z "$record" ] && continue
+  added="$(printf '%s\n' "$record" | cut -f1)"
+  deleted="$(printf '%s\n' "$record" | cut -f2)"
+  rest="$(printf '%s\n' "$record" | cut -f3-)"
+  file_path="$(extract_path_from_numstat_tail "$rest")"
   [ -z "$file_path" ] && continue
   if is_ignored_file "$file_path"; then
     continue
@@ -211,7 +210,8 @@ while IFS= read -r line; do
 
   lines_added=$((lines_added + added))
   lines_deleted=$((lines_deleted + deleted))
-done < "$numstat_file"
+done
+exec 3<&-
 
 line_churn=$((lines_added + lines_deleted))
 

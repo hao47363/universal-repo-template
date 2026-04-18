@@ -1,8 +1,14 @@
 #!/usr/bin/env sh
-# Fails when root CHANGELOG.md and github-ci/CHANGELOG.md differ (run after sync).
+# Fails when root CHANGELOG.md and github-ci/CHANGELOG.md differ (monorepo only).
 set -eu
 
 root="${1:-.}"
+
+if [ ! -d "${root}/github-ci" ]; then
+  echo "info: changelog parity skipped (no nested github-ci/; not a monorepo mirror layout)." >&2
+  exit 0
+fi
+
 a="${root}/CHANGELOG.md"
 b="${root}/github-ci/CHANGELOG.md"
 

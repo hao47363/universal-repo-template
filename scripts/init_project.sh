@@ -81,6 +81,10 @@ if [ ! -d "$INIT_TARGET_DIR" ]; then
   echo "Init target directory not found: $INIT_TARGET_DIR"
   exit 1
 fi
+if [ -z "$(find "$INIT_TARGET_DIR" -mindepth 1 2>/dev/null | head -n 1)" ]; then
+  echo "Init target directory is empty (scaffold produced no files): $INIT_TARGET_DIR"
+  exit 1
+fi
 
 for f in README.md CHANGELOG.md; do
   if [ -f "$INIT_TARGET_DIR/$f" ]; then

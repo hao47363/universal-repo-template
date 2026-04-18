@@ -31,6 +31,10 @@ if [ "$section" = "$query" ]; then
     substr($0, 1, length(topkey) + 1) == topkey ":" {
       value = substr($0, length(topkey) + 2)
       value = trim(value)
+      if (value !~ /^"/) {
+        sub(/\s*#.*$/, "", value)
+        value = trim(value)
+      }
       if (value ~ /^".*"$/) {
         sub(/^"/, "", value)
         sub(/"$/, "", value)
@@ -42,8 +46,13 @@ if [ "$section" = "$query" ]; then
   exit 0
 fi
 
+if ! printf '%s' "$query" | grep -Eq '^[^.]+\.[^.]+$'; then
+  echo "read_project_config.sh: query must be exactly one dot with non-empty section and key (e.g. project.stack): $query" >&2
+  exit 1
+fi
+
 if [ -z "$key" ]; then
-  echo "Query must be in section.key format when using a dot."
+  echo "read_project_config.sh: invalid query (empty key segment): $query" >&2
   exit 1
 fi
 
